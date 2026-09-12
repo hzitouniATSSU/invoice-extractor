@@ -12,17 +12,19 @@ client = TestClient(app)
 from app.extractors import (
     extract_invoice_number,
     extract_invoice_date,
-    normalize_amount,
-    extract_total_amount,
     extract_currency,
     extract_supplier_name,
     extract_customer_name,
     is_valid_ice,
-    extract_subtotal_amount,
-    extract_tax_amount,
     extract_invoice_data,
     extract_invoice,
     
+)
+from app.amounts import (
+    extract_subtotal_amount,
+    extract_tax_amount,
+    extract_total_amount,
+      normalize_amount
 )
 from app.exporters import export_invoice_to_csv, export_invoice_to_excel
 from app.review import review_invoice, finalize_invoice, InvoiceNotReadyError,  is_totals_consistent
