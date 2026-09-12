@@ -9,7 +9,7 @@ import io
 
 client = TestClient(app)
 
-from app.extractors import (
+from app.pipeline import (
   extract_invoice_data,
     extract_invoice,
     

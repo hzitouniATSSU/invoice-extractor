@@ -3,7 +3,7 @@ from pypdf import PdfReader
 from pypdf.errors import PdfStreamError
 from fastapi.responses import FileResponse,HTMLResponse
 from starlette.background import BackgroundTask
-from app.extractors import extract_invoice
+from app.pipeline import extract_invoice
 from app.exporters import export_invoice_to_csv, export_invoice_to_excel
 from app.review import review_invoice, is_totals_consistent
 from app.models import InvoiceData
