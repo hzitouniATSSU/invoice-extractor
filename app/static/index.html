@@ -1,0 +1,483 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Invoice Extractor</title>
+<style>
+  :root {
+    --ink: #1c2530;
+    --paper: #fbfaf8;
+    --line: #dcd7cd;
+    --accent: #2f6f4f;
+    --accent-ink: #ffffff;
+    --error: #a3382c;
+    --muted: #6b6459;
+    --edited: #4a6a8a;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+    line-height: 1.5;
+  }
+
+  main {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 3rem 1.5rem 4rem;
+  }
+
+  h1 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin: 0 0 0.25rem;
+  }
+
+  p.lede {
+    color: var(--muted);
+    margin: 0 0 2rem;
+    max-width: 46ch;
+  }
+
+  .panel {
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 1.5rem;
+    background: white;
+  }
+
+  .panel + .panel {
+    margin-top: 1.5rem;
+  }
+
+  label {
+    display: block;
+    font-weight: 600;
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+  }
+
+  input[type="file"] {
+    display: block;
+    width: 100%;
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+  }
+
+  select {
+    font-size: 0.9rem;
+    padding: 0.4rem 0.6rem;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    background: white;
+    margin-right: 0.75rem;
+  }
+
+  .actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  button {
+    font: inherit;
+    font-weight: 600;
+    font-size: 0.9rem;
+    padding: 0.55rem 1.1rem;
+    border-radius: 4px;
+    border: 1px solid transparent;
+    cursor: pointer;
+  }
+
+  button.primary {
+    background: var(--accent);
+    color: var(--accent-ink);
+  }
+
+  button.primary:hover { filter: brightness(1.08); }
+
+  button.secondary {
+    background: white;
+    border-color: var(--line);
+    color: var(--ink);
+  }
+
+  button.secondary:hover { border-color: var(--ink); }
+
+  button:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
+  #status-line {
+    margin-top: 1rem;
+    font-size: 0.9rem;
+    color: var(--muted);
+    min-height: 1.2em;
+  }
+
+  #status-line.error { color: var(--error); }
+
+  #result {
+    margin-top: 1.5rem;
+  }
+
+  #result:empty { display: none; }
+
+  .badge {
+    display: inline-block;
+    padding: 0.15rem 0.55rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+  }
+
+  .badge.ready { background: #e3f1e9; color: var(--accent); }
+  .badge.needs_review { background: #fbeecf; color: #8a5a10; }
+  .badge.blocked { background: #f6e2df; color: var(--error); }
+
+  form.invoice-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+
+  .field-row label {
+    font-size: 0.85rem;
+    margin-bottom: 0.3rem;
+  }
+
+  .field-row input {
+    width: 100%;
+    font: inherit;
+    font-size: 0.9rem;
+    padding: 0.45rem 0.6rem;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    background: white;
+    color: var(--ink);
+  }
+
+  .field-row input:focus {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+
+  .field-row.has-error input { border-color: var(--error); }
+  .field-row.has-warning input { border-color: #b5811a; }
+  .field-row.edited input { border-color: var(--edited); }
+
+  .field-message {
+    margin: 0.3rem 0 0;
+    font-size: 0.8rem;
+  }
+
+  .field-message.issue-error { color: var(--error); }
+  .field-message.issue-warning { color: #8a5a10; }
+  .field-message.field-message-edited { color: var(--edited); font-style: italic; }
+
+  .form-note {
+    font-size: 0.8rem;
+    color: var(--muted);
+    margin: 1rem 0 0;
+    padding-top: 0.75rem;
+    border-top: 1px dashed var(--line);
+  }
+</style>
+</head>
+<body>
+<main>
+  <h1>Invoice Extractor</h1>
+  <p class="lede">
+    Upload a PDF invoice to extract its fields into an editable form, or
+    export it straight to a spreadsheet.
+  </p>
+
+  <div class="panel">
+    <label for="file-input">Invoice PDF</label>
+    <input type="file" id="file-input" accept="application/pdf" />
+
+    <div class="actions">
+      <button type="button" class="primary" id="preview-btn">Extract</button>
+      <select id="format-select">
+        <option value="csv">CSV</option>
+        <option value="xlsx">Excel</option>
+      </select>
+      <button type="button" class="secondary" id="export-btn">Download</button>
+    </div>
+
+    <div id="status-line"></div>
+  </div>
+
+  <div id="result"></div>
+</main>
+
+<script>
+  const fileInput = document.getElementById("file-input");
+  const previewBtn = document.getElementById("preview-btn");
+  const exportBtn = document.getElementById("export-btn");
+  const formatSelect = document.getElementById("format-select");
+  const statusLine = document.getElementById("status-line");
+  const resultEl = document.getElementById("result");
+
+  // Set once a preview has succeeded, cleared whenever the file changes.
+  // Export reads from this rather than "whatever file happens to be
+  // selected right now" -- that's what makes it export the *reviewed*
+  // invoice instead of silently re-running extraction on a possibly
+  // different file the person picked afterward.
+  let currentFilenameStem = null;
+
+  exportBtn.disabled = true;
+
+  fileInput.addEventListener("change", () => {
+    currentFilenameStem = null;
+    exportBtn.disabled = true;
+    resultEl.replaceChildren();
+    setStatus("");
+  });
+
+  function setStatus(message, isError) {
+    statusLine.textContent = message || "";
+    statusLine.classList.toggle("error", Boolean(isError));
+  }
+
+  function requireFile() {
+    const file = fileInput.files[0];
+    if (!file) {
+      setStatus("Choose a PDF first.", true);
+      return null;
+    }
+    return file;
+  }
+
+  function setBusy(busy) {
+    previewBtn.disabled = busy;
+    exportBtn.disabled = busy || !currentFilenameStem;
+  }
+
+  // One entry per InvoiceData field. `type` picks the HTML input type;
+  // date fields already arrive as "YYYY-MM-DD" from the backend, which is
+  // exactly the format <input type="date"> expects.
+  const INVOICE_FIELDS = [
+    ["invoice_number", "Invoice number", "text"],
+    ["invoice_date", "Invoice date", "date"],
+    ["total_amount", "Total amount", "number"],
+    ["subtotal", "Subtotal", "number"],
+    ["tax_amount", "Tax amount", "number"],
+    ["currency", "Currency", "text"],
+    ["supplier_name", "Supplier name", "text"],
+    ["supplier_tax_id", "Supplier tax ID", "text"],
+    ["customer_name", "Customer name", "text"],
+    ["customer_ICE", "Customer ICE", "text"],
+  ];
+
+  function renderResult(payload) {
+    const data = payload.data || {};
+    const issues = payload.issues || [];
+
+    resultEl.replaceChildren();
+
+    const panel = document.createElement("div");
+    panel.className = "panel";
+
+    const badge = document.createElement("span");
+    badge.className = `badge ${payload.status}`;
+    badge.textContent = payload.status.replace("_", " ");
+    panel.appendChild(badge);
+
+    const form = document.createElement("form");
+    form.className = "invoice-form";
+    form.noValidate = true;
+
+    for (const [key, label, inputType] of INVOICE_FIELDS) {
+      const fieldIssues = issues.filter((issue) => issue.field === key);
+      const hasError = fieldIssues.some((issue) => issue.severity === "error");
+      const hasWarning = fieldIssues.some((issue) => issue.severity === "warning");
+
+      const row = document.createElement("div");
+      row.className = "field-row";
+      if (hasError) row.classList.add("has-error");
+      else if (hasWarning) row.classList.add("has-warning");
+
+      const fieldId = `field-${key}`;
+
+      const labelEl = document.createElement("label");
+      labelEl.setAttribute("for", fieldId);
+      labelEl.textContent = label;
+      row.appendChild(labelEl);
+
+      const input = document.createElement("input");
+      input.type = inputType;
+      input.id = fieldId;
+      input.name = key;
+      // Every field shows, even ones that came back empty -- that's the
+      // point of an editable form: filling in exactly what's missing.
+      const value = data[key];
+      input.value = value === null || value === undefined ? "" : value;
+      if (inputType === "number") input.step = "0.01";
+      row.appendChild(input);
+
+      for (const issue of fieldIssues) {
+        const message = document.createElement("p");
+        message.className = `field-message ${issue.severity === "error" ? "issue-error" : "issue-warning"}`;
+        message.textContent = issue.message;
+        row.appendChild(message);
+      }
+
+      // If this field had an extraction issue, clear the stale
+      // error/warning as soon as the person changes it -- showing
+      // "must contain 15 digits" after they've already fixed it is
+      // actively misleading. This does NOT re-validate anything; it
+      // just stops displaying a judgment about a value that no longer
+      // exists. The real check (InvoiceData's own rules, server-side)
+      // still runs on Download and is what actually decides correctness.
+      if (hasError || hasWarning) {
+        input.addEventListener(
+          "input",
+          () => {
+            row.classList.remove("has-error", "has-warning");
+            row.querySelectorAll(".field-message").forEach((el) => el.remove());
+            row.classList.add("edited");
+            const note = document.createElement("p");
+            note.className = "field-message field-message-edited";
+            note.textContent = "Edited -- validated when you download.";
+            row.appendChild(note);
+          },
+          { once: true }
+        );
+      }
+
+      form.appendChild(row);
+    }
+
+    panel.appendChild(form);
+
+    const note = document.createElement("p");
+    note.className = "form-note";
+    note.textContent = "Correct any fields above, then choose a format and download.";
+    panel.appendChild(note);
+
+    resultEl.appendChild(panel);
+  }
+
+  // Reads the live (possibly edited) value of every InvoiceData field
+  // straight from its input, rather than the original /extract payload --
+  // so corrections the person makes are what actually gets exported.
+  // Empty inputs become null, not "": InvoiceData's optional fields are
+  // nullable, and Pydantic will correctly reject a genuinely-blank
+  // required field as null rather than silently accepting an empty
+  // string as if it were a valid invoice number.
+  function collectInvoiceFormData() {
+    const result = {};
+    for (const [key] of INVOICE_FIELDS) {
+      const input = document.getElementById(`field-${key}`);
+      const raw = input ? input.value : "";
+      result[key] = raw === "" ? null : raw;
+    }
+    return result;
+  }
+
+  previewBtn.addEventListener("click", async () => {
+    const file = requireFile();
+    if (!file) return;
+
+    setBusy(true);
+    setStatus("Reading invoice…");
+    resultEl.replaceChildren();
+    currentFilenameStem = null;
+    exportBtn.disabled = true;
+
+    const body = new FormData();
+    body.append("file", file);
+
+    try {
+      const response = await fetch("/extract", { method: "POST", body });
+      const payload = await response.json();
+
+      if (!response.ok) {
+        const detail = typeof payload.detail === "string"
+          ? payload.detail
+          : (payload.detail && payload.detail.message) || "Extraction failed.";
+        setStatus(detail, true);
+        return;
+      }
+
+      setStatus("");
+      renderResult(payload);
+
+      // Strip whatever extension the upload had -- "my_invoice.pdf" -> "my_invoice".
+      currentFilenameStem = file.name.replace(/\.[^./]+$/, "") || "invoice";
+    } catch (err) {
+      setStatus("Could not reach the server. Check your connection and try again.", true);
+    } finally {
+      setBusy(false);
+    }
+  });
+
+  exportBtn.addEventListener("click", async () => {
+    if (!currentFilenameStem) {
+      setStatus("Extract an invoice before exporting.", true);
+      return;
+    }
+
+    setBusy(true);
+    setStatus("Preparing download…");
+
+    const format = formatSelect.value;
+    const invoiceData = collectInvoiceFormData();
+
+    try {
+      const response = await fetch(
+        `/export?format=${format}&filename=${encodeURIComponent(currentFilenameStem)}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(invoiceData),
+        }
+      );
+
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({}));
+        const detail = typeof payload.detail === "string"
+          ? payload.detail
+          : (payload.detail && payload.detail.message) || "Export failed.";
+        const issues = payload.detail && payload.detail.issues;
+        const fullMessage = Array.isArray(issues) && issues.length
+          ? `${detail} ${issues.join(" ")}`
+          : detail;
+        setStatus(fullMessage, true);
+        return;
+      }
+
+      const blob = await response.blob();
+      const disposition = response.headers.get("Content-Disposition") || "";
+      const match = disposition.match(/filename="?([^"]+)"?/);
+      const filename = match ? match[1] : `${currentFilenameStem}.${format}`;
+
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+
+      setStatus(`Downloaded ${filename}.`);
+    } catch (err) {
+      setStatus("Could not reach the server. Check your connection and try again.", true);
+    } finally {
+      setBusy(false);
+    }
+  });
+</script>
+</body>
+</html>
