@@ -23,14 +23,12 @@ from app.extractors import (
     is_valid_ice,
     extract_subtotal_amount,
     extract_tax_amount,
-    is_totals_consistent,
     extract_invoice_data,
     extract_invoice,
-    review_invoice,
-     finalize_invoice, 
-     InvoiceNotReadyError,
+    
 )
 from app.exporters import export_invoice_to_csv, export_invoice_to_excel
+from app.review import review_invoice, finalize_invoice, InvoiceNotReadyError,  is_totals_consistent
 from app.models import (
     ExtractedInvoiceData,
     ReviewIssue,

@@ -5,10 +5,9 @@ from fastapi.responses import FileResponse,HTMLResponse
 from starlette.background import BackgroundTask
 from app.extractors import (
     extract_invoice, 
-    review_invoice,
-    is_totals_consistent,
     is_valid_ice)
 from app.exporters import export_invoice_to_csv, export_invoice_to_excel
+from app.review import review_invoice, is_totals_consistent
 from app.models import InvoiceData
 
 import shutil
@@ -58,11 +57,6 @@ async def upload_page():
 @app.post("/extract")
 async def extract_invoice_endpoint(file: UploadFile = File(...)):
     text = await read_pdf_text(file)
-
-    print("----- PDF TEXT -----")
-    print(repr(text))
-    print("--------------------")
-
 
     extraction = extract_invoice(text)
     review = review_invoice(extraction)
