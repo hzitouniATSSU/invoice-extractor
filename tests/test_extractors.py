@@ -10,13 +10,7 @@ import io
 client = TestClient(app)
 
 from app.extractors import (
-    extract_invoice_number,
-    extract_invoice_date,
-    extract_currency,
-    extract_supplier_name,
-    extract_customer_name,
-    is_valid_ice,
-    extract_invoice_data,
+  extract_invoice_data,
     extract_invoice,
     
 )
@@ -28,7 +22,7 @@ from app.amounts import (
 )
 from app.exporters import export_invoice_to_csv, export_invoice_to_excel
 from app.review import review_invoice, finalize_invoice, InvoiceNotReadyError,  is_totals_consistent
-from app.tax_ids import extract_tax_id_by_party, select_customer_ice_result, select_supplier_tax_id_result
+from app.tax_ids import extract_tax_id_by_party, select_customer_ice_result, select_supplier_tax_id_result, is_valid_ice
 from app.models import (
     ExtractedInvoiceData,
     ReviewIssue,
@@ -37,6 +31,15 @@ from app.models import (
     ExtractionResult,
     TaxIdResult,
     InvoiceData
+)
+from app.parties import(
+     extract_supplier_name,
+        extract_customer_name,
+)
+from app.fields import(
+    extract_invoice_number,
+        extract_invoice_date,
+        extract_currency,
 )
 from io import BytesIO
 from reportlab.pdfgen import canvas

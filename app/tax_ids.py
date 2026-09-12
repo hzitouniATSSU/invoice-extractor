@@ -96,7 +96,15 @@ def extract_tax_id_by_party(text: str) -> dict[str, list[tuple[str, str]]]:
 
     return result
 
+def is_ice_label(label: str) -> bool:
+    return label.strip().upper() == "ICE"
 
+def is_valid_ice(value: str) -> bool:
+    """ICE numbers are 15 digits. Strips formatting characters we
+    explicitly allow (currently just spaces, per the "001 234 567 000 089"
+    grouping style) before checking length/digit-only."""
+    cleaned = value.replace(" ", "")
+    return bool(re.fullmatch(r"\d{15}", cleaned))
 
 SUPPLIER_TAX_ID_PRIORITY = ["ICE", "IF", "IDENTIFIANT FISCAL", "TAX ID"]
 
