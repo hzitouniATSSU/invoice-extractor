@@ -29,10 +29,8 @@ from app.extractors import (
     review_invoice,
      finalize_invoice, 
      InvoiceNotReadyError,
-     export_invoice_to_csv,
-     export_invoice_to_excel,
 )
-
+from app.exporters import export_invoice_to_csv, export_invoice_to_excel
 from app.models import (
     ExtractedInvoiceData,
     ReviewIssue,

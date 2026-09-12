@@ -6,10 +6,9 @@ from starlette.background import BackgroundTask
 from app.extractors import (
     extract_invoice, 
     review_invoice,
-    export_invoice_to_csv,
-    export_invoice_to_excel,
     is_totals_consistent,
     is_valid_ice)
+from app.exporters import export_invoice_to_csv, export_invoice_to_excel
 from app.models import InvoiceData
 
 import shutil
