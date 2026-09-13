@@ -7,6 +7,28 @@
 
 A Python/FastAPI application that extracts structured invoice data from PDF invoices using deterministic extraction. Missing or ambiguous information is surfaced for human review rather than silently guessed, allowing users to correct and confirm extracted data before export. The current MVP focuses on text-based Moroccan invoice formats in French and English.
 
+## Demo
+
+The application extracts structured invoice data, surfaces uncertain or missing information for human review, and exports the corrected result to CSV or Excel.
+
+### Successful extraction
+
+A supported invoice is extracted successfully and classified as `ready`.
+
+![Successful invoice extraction](docs/images/extraction-ready.png)
+
+### Human review
+
+When a required field cannot be extracted reliably, the invoice is classified as `blocked` rather than silently guessing a value.
+
+![Blocked invoice requiring human review](docs/images/human-review.png)
+
+### Correction before export
+
+The user can correct the extracted data directly in the browser. Corrected values are validated when the invoice is exported.
+
+![Corrected invoice before export](docs/images/corrected-export.png)
+
 ## Features
 - PDF upload and text extraction
 - French and English invoice field extraction
