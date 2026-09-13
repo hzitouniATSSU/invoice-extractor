@@ -7,7 +7,7 @@ from app.models import (
     ReviewIssue,
     ReviewResult,
 )
-from app.extractors import is_valid_ice
+from app.tax_ids import is_valid_ice
 
 
 
@@ -62,7 +62,17 @@ def review_invoice(extraction: "ExtractionResult") -> ReviewResult:
 
     return ReviewResult(data=data, issues=issues)
 
-
+def validate_invoice_data(invoice: InvoiceData) -> list[str]:
+   
+    problems = []
+    if invoice.customer_ICE is not None and not is_valid_ice(invoice.customer_ICE):
+        problems.append("Customer ICE must contain 15 digits.")
+ 
+    totals_ok = is_totals_consistent(invoice.subtotal, invoice.tax_amount, invoice.total_amount)
+    if totals_ok is False:
+        problems.append("Subtotal + tax amount does not equal total amount.")
+ 
+    return problems
 
 def is_totals_consistent(
     subtotal: Decimal | None,
