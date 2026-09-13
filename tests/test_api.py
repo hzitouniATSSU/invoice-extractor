@@ -120,19 +120,23 @@ READY_TEXT = (
     "Total TTC: 1200 MAD\n"
     "Currency: MAD"
 )
+VALID_INVOICE = {
+    "invoice_number": "2026/145",
+    "invoice_date": "2026-09-05",
+    "supplier_name": "ACME SARL",
+    "supplier_tax_id": None,
+    "customer_name": None,
+    "customer_ICE": None,
+    "subtotal": "1000",
+    "tax_amount": "200",
+    "total_amount": "1200",
+    "currency": "MAD",
+}
 
 def test_export_endpoint_returns_csv():
-    pdf_bytes = _make_pdf(READY_TEXT)
-
     response = client.post(
-        "/export?format=csv",
-        files={
-            "file": (
-                "sample-invoice.pdf",
-                pdf_bytes,
-                "application/pdf",
-            )
-        },
+        "/export?format=csv&filename=sample-invoice",
+        json=VALID_INVOICE,
     )
 
     assert response.status_code == 200
@@ -140,7 +144,6 @@ def test_export_endpoint_returns_csv():
     assert "sample-invoice.csv" in response.headers["content-disposition"]
 
     rows = list(csv.DictReader(io.StringIO(response.text)))
-
     assert len(rows) == 1
 
     row = rows[0]
@@ -152,17 +155,9 @@ def test_export_endpoint_returns_csv():
 
 
 def test_export_endpoint_returns_xlsx():
-    pdf_bytes = _make_pdf(READY_TEXT)
-
     response = client.post(
-        "/export?format=xlsx",
-        files={
-            "file": (
-                "sample-invoice.pdf",
-                pdf_bytes,
-                "application/pdf",
-            )
-        },
+        "/export?format=xlsx&filename=sample-invoice",
+        json=VALID_INVOICE,
     )
 
     assert response.status_code == 200
@@ -172,6 +167,22 @@ def test_export_endpoint_returns_xlsx():
     )
     assert "sample-invoice.xlsx" in response.headers["content-disposition"]
     assert len(response.content) > 0
+
+
+def test_export_rejects_unsupported_currency_natively():
+    payload = {**VALID_INVOICE, "currency": "XYZ"}
+    response = client.post("/export?format=csv", json=payload)
+
+    assert response.status_code == 422
+    assert isinstance(response.json()["detail"], list)
+
+
+def test_export_rejects_blank_supplier_name_natively():
+    payload = {**VALID_INVOICE, "supplier_name": "   "}
+    response = client.post("/export?format=csv", json=payload)
+
+    assert response.status_code == 422
+    assert isinstance(response.json()["detail"], list)
 
 def test_export_endpoint_blocks_invoice_not_ready():
     pdf_bytes = _make_pdf("""
