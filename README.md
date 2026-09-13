@@ -1,7 +1,7 @@
 # Invoice Extractor
 ![Python](https://img.shields.io/badge/Python-3.13-blue)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.141.1-009688)
-![Tests](https://img.shields.io/badge/tests-160%20passed-brightgreen)
+![Tests](https://img.shields.io/badge/tests-178%20passed-brightgreen)
 
 ## Live Demo
 
