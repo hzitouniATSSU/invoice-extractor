@@ -4,6 +4,8 @@ from pypdf.errors import PdfStreamError
 import io
 
 
+MAX_PDF_SIZE_BYTES = 10 * 1024 * 1024
+
 
 async def read_pdf_text(file: UploadFile) -> str:
     if file.content_type != "application/pdf":
@@ -11,12 +13,14 @@ async def read_pdf_text(file: UploadFile) -> str:
             status_code=status.HTTP_400_BAD_REQUEST,    
             detail="Invalid file type. Only PDF files are allowed."
         )
+    
+    contents = await file.read(MAX_PDF_SIZE_BYTES + 1)
+    if len(contents) > MAX_PDF_SIZE_BYTES:
+        raise HTTPException(status_code=status.HTTP_413_CONTENT_TOO_LARGE, detail="PDF exceeds the 10 MB limit.")
+
     try:
-        contents = await file.read()
         pdf = PdfReader(io.BytesIO(contents))
-
         text = "\n".join(page.extract_text() or "" for page in pdf.pages)
-
 
     except PdfStreamError:
         raise HTTPException(

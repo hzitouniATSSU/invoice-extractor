@@ -9,7 +9,7 @@ client = TestClient(app)
 
 from io import BytesIO
 from reportlab.pdfgen import canvas
-
+from app.pdf import MAX_PDF_SIZE_BYTES
 
 
 def _make_pdf(text: str) -> bytes:
@@ -295,3 +295,66 @@ def test_export_sanitizes_filename_from_query_param():
     assert 'filename="secret.csv"' in content_disposition
     assert ".." not in content_disposition
     assert "/" not in content_disposition
+
+
+def test_extract_rejects_oversized_upload():
+    # Doesn't need to be a real PDF: size validation happens before
+    # PdfReader ever sees the bytes, so garbage content is fine here --
+    # and using garbage (not a real 10MB+ PDF) is itself part of what
+    # this test proves: the 413 must fire on size alone, before any
+    # attempt to parse the content.
+    oversized = b"x" * (MAX_PDF_SIZE_BYTES + 1)
+ 
+    response = client.post(
+        "/extract",
+        files={"file": ("huge.pdf", oversized, "application/pdf")},
+    )
+ 
+    assert response.status_code == 413
+    assert response.json()["detail"] == "PDF exceeds the 10 MB limit."
+ 
+ 
+def test_extract_accepts_small_valid_pdf():
+    pdf_bytes = _make_pdf(READY_TEXT)
+ 
+    response = client.post(
+        "/extract",
+        files={"file": ("invoice.pdf", pdf_bytes, "application/pdf")},
+    )
+ 
+    assert response.status_code == 200
+    assert response.json()["status"] == "ready"
+ 
+ 
+def test_extract_rejects_non_pdf_content_type():
+    response = client.post(
+        "/extract",
+        files={"file": ("invoice.txt", b"not a pdf", "text/plain")},
+    )
+ 
+    assert response.status_code == 400
+    assert response.json()["detail"] == "Invalid file type. Only PDF files are allowed."
+ 
+ 
+def test_extract_rejects_corrupt_pdf():
+    response = client.post(
+        "/extract",
+        files={"file": ("invoice.pdf", b"not actually a pdf structure", "application/pdf")},
+    )
+ 
+    assert response.status_code == 400
+    assert response.json()["detail"] == "Corrupted or invalid PDF file structure."
+ 
+ 
+def test_extract_rejects_pdf_with_no_extractable_text():
+    pdf_bytes = _make_pdf("")
+ 
+    response = client.post(
+        "/extract",
+        files={"file": ("blank.pdf", pdf_bytes, "application/pdf")},
+    )
+ 
+    assert response.status_code == 400
+    assert response.json()["detail"] == (
+        "No extractable text found. Scanned PDFs are not supported in this version."
+    )
