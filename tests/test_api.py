@@ -7,6 +7,7 @@ client = TestClient(app)
 
 
 
+from pypdf import PdfWriter
 from io import BytesIO
 from reportlab.pdfgen import canvas
 from app.pdf import MAX_PDF_SIZE_BYTES
@@ -357,4 +358,28 @@ def test_extract_rejects_pdf_with_no_extractable_text():
     assert response.status_code == 400
     assert response.json()["detail"] == (
         "No extractable text found. Scanned PDFs are not supported in this version."
+    )
+
+def test_extract_rejects_encrypted_pdf():
+    buffer = BytesIO()
+
+    writer = PdfWriter()
+    writer.add_blank_page(width=100, height=100)
+    writer.encrypt("secret")
+    writer.write(buffer)
+
+    response = client.post(
+        "/extract",
+        files={
+            "file": (
+                "encrypted.pdf",
+                buffer.getvalue(),
+                "application/pdf",
+            )
+        },
+    )
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == (
+        "Password-protected or encrypted PDFs are not supported."
     )

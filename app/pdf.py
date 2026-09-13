@@ -1,6 +1,6 @@
 from fastapi import  UploadFile, HTTPException, status
 from pypdf import PdfReader
-from pypdf.errors import PdfStreamError
+from pypdf.errors import PdfReadError, ParseError, FileNotDecryptedError
 import io
 
 
@@ -22,7 +22,13 @@ async def read_pdf_text(file: UploadFile) -> str:
         pdf = PdfReader(io.BytesIO(contents))
         text = "\n".join(page.extract_text() or "" for page in pdf.pages)
 
-    except PdfStreamError:
+    except FileNotDecryptedError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Password-protected or encrypted PDFs are not supported."
+        )
+
+    except (PdfReadError, ParseError):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Corrupted or invalid PDF file structure."
