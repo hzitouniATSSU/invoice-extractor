@@ -3,6 +3,14 @@
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.141.1-009688)
 ![Tests](https://img.shields.io/badge/tests-160%20passed-brightgreen)
 
+## Live Demo
+
+Try the deployed application:
+
+**[Open Invoice Extractor](https://invoice-extractor-b1gp.onrender.com/)**
+
+> The demo runs on a free hosting tier, so the first request may take a short time while the service wakes up.
+
 ## Overview
 
 A Python/FastAPI application that extracts structured invoice data from PDF invoices using deterministic extraction. Missing or ambiguous information is surfaced for human review rather than silently guessed, allowing users to correct and confirm extracted data before export. The current MVP focuses on text-based Moroccan invoice formats in French and English.
