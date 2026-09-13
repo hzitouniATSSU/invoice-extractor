@@ -258,3 +258,40 @@ def test_export_endpoint_returns_xlsx():
     )
     assert "sample-invoice.xlsx" in response.headers["content-disposition"]
     assert len(response.content) > 0
+
+
+def test_export_sanitizes_filename_from_query_param():
+    # Otherwise-valid, fully corrected invoice -- the only thing under
+    # test here is what /export does with a malicious `filename` query
+    # param, not extraction or business-rule validation.
+    valid_invoice = {
+        "invoice_number": "FAC-2026-001",
+        "invoice_date": "2026-09-07",
+        "total_amount": "1200",
+        "currency": "MAD",
+        "supplier_name": "Atlas Trading Co.",
+        "customer_name": None,
+        "customer_ICE": None,
+        "supplier_tax_id": None,
+        "subtotal": "1000",
+        "tax_amount": "200",
+    }
+ 
+    response = client.post(
+        "/export",
+        params={"format": "csv", "filename": "../../secret"},
+        json=valid_invoice,
+    )
+ 
+    assert response.status_code == 200
+ 
+    content_disposition = response.headers["content-disposition"]
+ 
+    # This is the point of the test: prove the ENDPOINT calls
+    # sanitize_filename_stem, not just that the helper works when called
+    # directly. If someone ever removed the sanitize_filename_stem(...)
+    # call from main.py and used the raw filename param instead, this
+    # is what would catch it.
+    assert 'filename="secret.csv"' in content_disposition
+    assert ".." not in content_disposition
+    assert "/" not in content_disposition

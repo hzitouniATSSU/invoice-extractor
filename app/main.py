@@ -12,7 +12,7 @@ from app.models import InvoiceData
 from app.pdf import read_pdf_text
 from app.pipeline import extract_invoice
 from app.review import review_invoice, validate_invoice_data
-
+from app.filenames import sanitize_filename_stem
 app = FastAPI()
 
 STATIC_DIR = Path(__file__).parent / "static"
@@ -65,7 +65,8 @@ async def export_invoice_endpoint(
         )
  
     export_fn, media_type = EXPORTERS[format]
-    download_filename = f"{filename}.{format}"
+    safe_filename = sanitize_filename_stem(filename)
+    download_filename = f"{safe_filename}.{format}"
  
     tmp_dir = tempfile.mkdtemp()
     output_path = Path(tmp_dir) / download_filename
