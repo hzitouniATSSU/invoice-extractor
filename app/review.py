@@ -17,36 +17,101 @@ def review_invoice(extraction: "ExtractionResult") -> ReviewResult:
     issues: list[ReviewIssue] = []
 
     if data.invoice_number is None:
-        issues.append(ReviewIssue(field="invoice_number", code="missing_required_field",
-                                   message="Invoice number is missing.", severity="error"))
+        issues.append(
+            ReviewIssue(
+                field="invoice_number",
+                code="missing_required_field",
+                message="Invoice number is missing.",
+                severity="error",
+            )
+        )
     if data.invoice_date is None:
-        issues.append(ReviewIssue(field="invoice_date", code="missing_required_field",
-                                   message="Invoice date is missing.", severity="error"))
+        issues.append(
+            ReviewIssue(
+                field="invoice_date",
+                code="missing_required_field",
+                message="Invoice date is missing.",
+                severity="error",
+            )
+        )
     if data.total_amount is None:
-        issues.append(ReviewIssue(field="total_amount", code="missing_required_field",
-                                   message="Total amount is missing.", severity="error"))
+        issues.append(
+            ReviewIssue(
+                field="total_amount",
+                code="missing_required_field",
+                message="Total amount is missing.",
+                severity="error",
+            )
+        )
 
     if currency_result.status == "missing":
-        issues.append(ReviewIssue(field="currency", code="missing_required_field",
-                                   message="No currency detected", severity="error"))
+        issues.append(
+            ReviewIssue(
+                field="currency",
+                code="missing_required_field",
+                message="No currency detected",
+                severity="error",
+            )
+        )
     elif currency_result.status == "conflicting":
-        issues.append(ReviewIssue(field="currency", code="conflicting_currency",
-                                   message=f"Multiple currencies detected: {', '.join(sorted(currency_result.candidates))}.",
-                                   severity="error"))
+        issues.append(
+            ReviewIssue(
+                field="currency",
+                code="conflicting_currency",
+                message=f"Multiple currencies detected: {', '.join(sorted(currency_result.candidates))}.",
+                severity="error",
+            )
+        )
 
     customer_ice_result = customer_ice_result
-    if customer_ice_result.status == "found" and not is_valid_ice(customer_ice_result.value):
-        issues.append(ReviewIssue(field="customer_ICE", code="invalid_ice", message="Customer ICE must contain 15 digits.", severity="warning"))
+    if customer_ice_result.status == "found" and not is_valid_ice(
+        customer_ice_result.value
+    ):
+        issues.append(
+            ReviewIssue(
+                field="customer_ICE",
+                code="invalid_ice",
+                message="Customer ICE must contain 15 digits.",
+                severity="warning",
+            )
+        )
     elif customer_ice_result.status == "conflicting":
-        issues.append(ReviewIssue(field="customer_ICE", code="conflicting_ice", message=(f"Multiple customer {customer_ice_result.label} values "f"detected: {', '.join(sorted(customer_ice_result.candidates))}."),severity="warning"))
+        issues.append(
+            ReviewIssue(
+                field="customer_ICE",
+                code="conflicting_ice",
+                message=(
+                    f"Multiple customer {customer_ice_result.label} values "
+                    f"detected: {', '.join(sorted(customer_ice_result.candidates))}."
+                ),
+                severity="warning",
+            )
+        )
 
     supplier_tax_id_result = supplier_tax_id_result
     if supplier_tax_id_result.status == "conflicting":
-        issues.append(ReviewIssue(field="supplier_tax_id", code="conflicting_tax_id", message=(f"Multiple supplier {supplier_tax_id_result.label} values " f"detected: {', '.join(sorted(supplier_tax_id_result.candidates))}."),severity="warning"))
+        issues.append(
+            ReviewIssue(
+                field="supplier_tax_id",
+                code="conflicting_tax_id",
+                message=(
+                    f"Multiple supplier {supplier_tax_id_result.label} values "
+                    f"detected: {', '.join(sorted(supplier_tax_id_result.candidates))}."
+                ),
+                severity="warning",
+            )
+        )
 
     totals_ok = is_totals_consistent(data.subtotal, data.tax_amount, data.total_amount)
     if totals_ok is False:
-        issues.append(ReviewIssue(field="total_amount", code="inconsistent_totals",message="Subtotal + tax amount does not equal total amount.", severity="warning"))
+        issues.append(
+            ReviewIssue(
+                field="total_amount",
+                code="inconsistent_totals",
+                message="Subtotal + tax amount does not equal total amount.",
+                severity="warning",
+            )
+        )
 
     if data.supplier_name is None:
         issues.append(
@@ -60,17 +125,21 @@ def review_invoice(extraction: "ExtractionResult") -> ReviewResult:
 
     return ReviewResult(data=data, issues=issues)
 
+
 def validate_invoice_data(invoice: InvoiceData) -> list[str]:
-   
+
     problems = []
     if invoice.customer_ICE is not None and not is_valid_ice(invoice.customer_ICE):
         problems.append("Customer ICE must contain 15 digits.")
- 
-    totals_ok = is_totals_consistent(invoice.subtotal, invoice.tax_amount, invoice.total_amount)
+
+    totals_ok = is_totals_consistent(
+        invoice.subtotal, invoice.tax_amount, invoice.total_amount
+    )
     if totals_ok is False:
         problems.append("Subtotal + tax amount does not equal total amount.")
- 
+
     return problems
+
 
 def is_totals_consistent(
     subtotal: Decimal | None,
@@ -87,14 +156,14 @@ def is_totals_consistent(
     return subtotal + tax_amount == total_amount
 
 
-
 class InvoiceNotReadyError(Exception):
     def __init__(self, status: str, issues: list[ReviewIssue]):
         self.status = status
         self.issues = issues
         summary = "; ".join(f"{i.field}:{i.code}" for i in issues) or "no issues listed"
-        super().__init__(f"Cannot finalize invoice: review status is '{status}', not 'ready'. Issues: {summary}")
-
+        super().__init__(
+            f"Cannot finalize invoice: review status is '{status}', not 'ready'. Issues: {summary}"
+        )
 
 
 def finalize_invoice(extraction: ExtractionResult, review: ReviewResult) -> InvoiceData:

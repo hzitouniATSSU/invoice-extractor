@@ -70,11 +70,7 @@ def test_extract_customer_name_from_client_section():
 
 
 def test_customer_company_name_starting_with_client_is_not_truncated():
-    text = (
-        "Émetteur : Adressé à :\n"
-        "VOTRE SOCIÉTÉ SARL\n"
-        "CLIENT EXEMPLE SARL\n"
-    )
+    text = "Émetteur : Adressé à :\nVOTRE SOCIÉTÉ SARL\nCLIENT EXEMPLE SARL\n"
 
     result = extract_customer_name(text)
 
@@ -95,8 +91,6 @@ def test_supplier_name_does_not_capture_adresse_a_heading():
 
     assert result != "Adressé à :"
     assert result == "VOTRE SOCIÉTÉ SARL"
-
-
 
 
 def test_extract_customer_name_from_mparsio_two_column_layout():

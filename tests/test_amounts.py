@@ -41,6 +41,7 @@ def test_normalize_amount(raw, expected):
 def test_extract_total_amount(text, expected):
     assert extract_total_amount(text) == expected
 
+
 @pytest.mark.parametrize(
     "text, expected",
     [
@@ -57,6 +58,7 @@ def test_extract_total_amount(text, expected):
 def test_extract_tax_amount(text, expected):
     assert extract_tax_amount(text) == expected
 
+
 @pytest.mark.parametrize(
     "text, expected",
     [
@@ -68,7 +70,6 @@ def test_extract_tax_amount(text, expected):
 )
 def test_extract_subtotal_amount(text, expected):
     assert extract_subtotal_amount(text) == expected
-
 
 
 def test_extract_total_amount_with_space_thousands_separator():
@@ -88,53 +89,38 @@ def test_extract_tax_amount_with_percentage_between_label_and_amount():
 
     assert extract_tax_amount(text) == Decimal("970.00")
 
+
 def test_extract_tax_amount_total_tva_with_percentage():
     text = "Total TVA 20% 1 840,00"
 
     assert extract_tax_amount(text) == Decimal("1840.00")
 
+
 def test_extract_tax_amount_when_totals_share_same_line():
-    text = (
-        "Total HT : 4 850,00 DH   "
-        "TVA (20%) : 970,00 DH   "
-        "Total TTC : 5 820,00 DH"
-    )
+    text = "Total HT : 4 850,00 DH   TVA (20%) : 970,00 DH   Total TTC : 5 820,00 DH"
 
     assert extract_tax_amount(text) == Decimal("970.00")
 
 
 def test_extract_total_amount_when_totals_share_same_line():
-    text = (
-        "Total HT : 4 850,00 DH   "
-        "TVA (20%) : 970,00 DH   "
-        "Total TTC : 5 820,00 DH"
-    )
+    text = "Total HT : 4 850,00 DH   TVA (20%) : 970,00 DH   Total TTC : 5 820,00 DH"
 
     assert extract_total_amount(text) == Decimal("5820.00")
 
 
 def test_extract_subtotal_amount_when_value_is_on_next_line():
-    text = (
-        "Total HT\n"
-        "9 200,00\n"
-    )
+    text = "Total HT\n9 200,00\n"
 
     assert extract_subtotal_amount(text) == Decimal("9200.00")
 
 
 def test_extract_tax_amount_when_value_is_on_next_line_after_rate():
-    text = (
-        "Total TVA 20%\n"
-        "1 840,00\n"
-    )
+    text = "Total TVA 20%\n1 840,00\n"
 
     assert extract_tax_amount(text) == Decimal("1840.00")
 
 
 def test_extract_total_amount_when_value_is_on_next_line():
-    text = (
-        "Total TTC\n"
-        "11 040,00\n"
-    )
+    text = "Total TTC\n11 040,00\n"
 
     assert extract_total_amount(text) == Decimal("11040.00")

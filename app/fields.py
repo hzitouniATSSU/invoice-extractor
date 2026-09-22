@@ -3,7 +3,7 @@ from datetime import date, datetime
 
 from app.models import CurrencyResult
 
-INVOICE_PATTERN= re.compile(
+INVOICE_PATTERN = re.compile(
     r"""
     (?:
     invoice[ \t]*no\.?
@@ -39,10 +39,10 @@ DATE_PATTERN = re.compile(
     [ \t]*[:\-]?[ \t]*
     (?P<value>\d{1,4}[/.\-]\d{1,2}[/.\-]\d{1,4})
 """,
-re.IGNORECASE | re.VERBOSE
+    re.IGNORECASE | re.VERBOSE,
 )
 
-DATE_FORMATS =[
+DATE_FORMATS = [
     "%d/%m/%Y",
     "%d-%m-%Y",
     "%d.%m.%Y",
@@ -51,14 +51,9 @@ DATE_FORMATS =[
 ]
 
 
-CURRENCY_CODE_PATTERN = re.compile(
-r'\b(?:MAD|DHS?|EUR|USD|CAD|AUD)\b',
- re.IGNORECASE 
-)
+CURRENCY_CODE_PATTERN = re.compile(r"\b(?:MAD|DHS?|EUR|USD|CAD|AUD)\b", re.IGNORECASE)
 
-CURRENCY_SYMBOL_PATTERN = re.compile(
- r'[$€£¥]'
-)
+CURRENCY_SYMBOL_PATTERN = re.compile(r"[$€£¥]")
 
 CODE_TO_CANONICAL = {
     "MAD": "MAD",
@@ -87,7 +82,7 @@ def extract_invoice_number(text: str) -> str | None:
 
 def extract_invoice_date(text: str) -> date | None:
     match = DATE_PATTERN.search(text)
-    if not match: 
+    if not match:
         return None
 
     raw = match.group("value")
@@ -98,7 +93,8 @@ def extract_invoice_date(text: str) -> date | None:
             continue
 
     return None
-    
+
+
 def extract_currency(text: str) -> CurrencyResult:
     raw_codes = CURRENCY_CODE_PATTERN.findall(text)
     canonical_codes = {CODE_TO_CANONICAL[code.upper()] for code in raw_codes}
@@ -110,6 +106,6 @@ def extract_currency(text: str) -> CurrencyResult:
 
     if len(combined) == 0:
         return CurrencyResult.missing()
-    if len(combined) == 1: 
+    if len(combined) == 1:
         return CurrencyResult.found(next(iter(combined)))
     return CurrencyResult.conflicting(combined)

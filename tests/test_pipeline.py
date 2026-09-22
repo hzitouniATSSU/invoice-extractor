@@ -58,9 +58,7 @@ Other charge: €20
 
     assert result.data.currency is None
 
-    assert result.currency_result == CurrencyResult.conflicting(
-        {"MAD", "EUR"}
-    )
+    assert result.currency_result == CurrencyResult.conflicting({"MAD", "EUR"})
 
 
 def test_pipeline_clean_invoice_is_ready():
@@ -94,10 +92,7 @@ Service fee: €20
     review = review_invoice(extraction)
 
     assert review.status == "blocked"
-    assert any(
-        issue.code == "conflicting_currency"
-        for issue in review.issues
-    )
+    assert any(issue.code == "conflicting_currency" for issue in review.issues)
 
 
 def test_pipeline_conflicting_customer_ice_needs_review():
@@ -114,7 +109,4 @@ Total TTC: 1200 MAD
     review = review_invoice(extraction)
 
     assert review.status == "needs_review"
-    assert any(
-        issue.code == "conflicting_ice"
-        for issue in review.issues
-    )
+    assert any(issue.code == "conflicting_ice" for issue in review.issues)

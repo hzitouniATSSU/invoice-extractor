@@ -24,6 +24,7 @@ from app.tax_ids import (
 def test_is_valid_ice(value, expected):
     assert is_valid_ice(value) == expected
 
+
 @pytest.mark.parametrize(
     "entries, expected_status, expected_value",
     [
@@ -117,8 +118,7 @@ def test_select_supplier_tax_id(entries, expected_status, expected_value):
             {"supplier": [("IDENTIFIANT FISCAL", "12345678")]},
         ),
         (
-            "Fournisseur ICE: 001234567000000\n"
-            "Client ICE: 009876543000012",
+            "Fournisseur ICE: 001234567000000\nClient ICE: 009876543000012",
             {
                 "supplier": [("ICE", "001234567000000")],
                 "customer": [("ICE", "009876543000012")],
@@ -131,11 +131,7 @@ def test_extract_tax_id_by_party(text, expected):
 
 
 def test_extract_customer_ice_from_mparsio_customer_block():
-    text = (
-        "CLIENT EXEMPLE SARL\n"
-        "I.C.E : 111111111111111\n"
-        "Rabat\n"
-    )
+    text = "CLIENT EXEMPLE SARL\nI.C.E : 111111111111111\nRabat\n"
 
     result = extract_invoice(text)
 
@@ -153,6 +149,7 @@ def test_extract_supplier_tax_id_from_company_footer():
     result = extract_invoice(text)
 
     assert result.data.supplier_tax_id == "000000000000000"
+
 
 def test_extract_supplier_ice_from_emetteur_section():
     text = (

@@ -16,7 +16,7 @@ CUSTOMER_PATTERN = re.compile(
     (?![ \t]*[:\-]?[ \t]*(?:ICE|IF|Identifiant[ \t]*Fiscal|Tax[ \t]*ID)\b)
     (?P<value>[^\n\s:\-][^\n]*)
 """,
-re.IGNORECASE | re.VERBOSE | re.MULTILINE
+    re.IGNORECASE | re.VERBOSE | re.MULTILINE,
 )
 
 CUSTOMER_SECTION_PATTERN = re.compile(
@@ -78,7 +78,6 @@ CUSTOMER_BEFORE_ICE_PATTERN = re.compile(
 )
 
 
-
 def extract_supplier_name(text: str) -> str | None:
     match = SUPPLIER_PATTERN.search(text)
 
@@ -100,6 +99,7 @@ def extract_supplier_name(text: str) -> str | None:
 
     return None
 
+
 def extract_customer_name(text: str) -> str | None:
     match = CUSTOMER_PATTERN.search(text)
 
@@ -120,4 +120,3 @@ def extract_customer_name(text: str) -> str | None:
         return value or None
 
     return None
-

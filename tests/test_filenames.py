@@ -23,7 +23,7 @@ def test_removes_windows_path():
 
 
 def test_removes_unsafe_characters():
-    assert sanitize_filename_stem('Invoice: Q3 <Draft>?') == "Invoice Q3 Draft"
+    assert sanitize_filename_stem("Invoice: Q3 <Draft>?") == "Invoice Q3 Draft"
 
 
 def test_blank_filename_falls_back_to_invoice():

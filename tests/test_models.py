@@ -55,4 +55,3 @@ def test_invoice_data_normalizes_whitespace_and_currency():
     assert invoice.supplier_name == "ACME SARL"
     assert invoice.invoice_number == "FAC-001"
     assert invoice.currency == "MAD"
-

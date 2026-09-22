@@ -26,6 +26,7 @@ def _make_pdf(text: str) -> bytes:
 
     return buffer.getvalue()
 
+
 def test_extract_endpoint_returns_structured_invoice():
     pdf_bytes = _make_pdf("""
 Invoice No: FAC-2026-001
@@ -76,6 +77,7 @@ def test_extract_endpoint_rejects_non_pdf():
         "Invalid file type. Only PDF files are allowed."
     )
 
+
 def test_extract_endpoint_rejects_corrupted_pdf():
     response = client.post(
         "/extract",
@@ -89,6 +91,7 @@ def test_extract_endpoint_rejects_corrupted_pdf():
     )
 
     assert response.status_code == 400
+
 
 def test_extract_endpoint_rejects_pdf_with_no_extractable_text():
     pdf_bytes = _make_pdf("")
@@ -106,9 +109,9 @@ def test_extract_endpoint_rejects_pdf_with_no_extractable_text():
 
     assert response.status_code == 400
     assert response.json()["detail"] == (
-        "No extractable text found. "
-        "Scanned PDFs are not supported in this version."
+        "No extractable text found. Scanned PDFs are not supported in this version."
     )
+
 
 READY_TEXT = (
     "Facture N° 2026/145\n"
@@ -131,6 +134,7 @@ VALID_INVOICE = {
     "total_amount": "1200",
     "currency": "MAD",
 }
+
 
 def test_export_endpoint_returns_csv():
     response = client.post(
@@ -183,6 +187,7 @@ def test_export_rejects_blank_supplier_name_natively():
     assert response.status_code == 422
     assert isinstance(response.json()["detail"], list)
 
+
 def test_export_endpoint_blocks_invoice_not_ready():
     pdf_bytes = _make_pdf("""
 Invoice No: FAC-2026-001
@@ -209,14 +214,14 @@ Total TTC: 1200 MAD
 
     assert response.status_code == 422
     detail = response.json()["detail"]
-    assert any(
-        error.get("loc", [])[-1] == "supplier_name" for error in detail
-    ), f"expected a supplier_name validation error, got: {detail}"
+    assert any(error.get("loc", [])[-1] == "supplier_name" for error in detail), (
+        f"expected a supplier_name validation error, got: {detail}"
+    )
 
 
-#===================================================
+# ===================================================
 # PDF text extraction with error Handling
-#===================================================
+# ===================================================
 def test_extract_then_export_csv():
     pdf_bytes = _make_pdf(READY_TEXT)
 
@@ -287,17 +292,17 @@ def test_export_sanitizes_filename_from_query_param():
         "subtotal": "1000",
         "tax_amount": "200",
     }
- 
+
     response = client.post(
         "/export",
         params={"format": "csv", "filename": "../../secret"},
         json=valid_invoice,
     )
- 
+
     assert response.status_code == 200
- 
+
     content_disposition = response.headers["content-disposition"]
- 
+
     # This is the point of the test: prove the ENDPOINT calls
     # sanitize_filename_stem, not just that the helper works when called
     # directly. If someone ever removed the sanitize_filename_stem(...)
@@ -315,60 +320,63 @@ def test_extract_rejects_oversized_upload():
     # this test proves: the 413 must fire on size alone, before any
     # attempt to parse the content.
     oversized = b"x" * (MAX_PDF_SIZE_BYTES + 1)
- 
+
     response = client.post(
         "/extract",
         files={"file": ("huge.pdf", oversized, "application/pdf")},
     )
- 
+
     assert response.status_code == 413
     assert response.json()["detail"] == "PDF exceeds the 10 MB limit."
- 
- 
+
+
 def test_extract_accepts_small_valid_pdf():
     pdf_bytes = _make_pdf(READY_TEXT)
- 
+
     response = client.post(
         "/extract",
         files={"file": ("invoice.pdf", pdf_bytes, "application/pdf")},
     )
- 
+
     assert response.status_code == 200
     assert response.json()["status"] == "ready"
- 
- 
+
+
 def test_extract_rejects_non_pdf_content_type():
     response = client.post(
         "/extract",
         files={"file": ("invoice.txt", b"not a pdf", "text/plain")},
     )
- 
+
     assert response.status_code == 400
     assert response.json()["detail"] == "Invalid file type. Only PDF files are allowed."
- 
- 
+
+
 def test_extract_rejects_corrupt_pdf():
     response = client.post(
         "/extract",
-        files={"file": ("invoice.pdf", b"not actually a pdf structure", "application/pdf")},
+        files={
+            "file": ("invoice.pdf", b"not actually a pdf structure", "application/pdf")
+        },
     )
- 
+
     assert response.status_code == 400
     assert response.json()["detail"] == "Corrupted or invalid PDF file structure."
- 
- 
+
+
 def test_extract_rejects_pdf_with_no_extractable_text():
     pdf_bytes = _make_pdf("")
- 
+
     response = client.post(
         "/extract",
         files={"file": ("blank.pdf", pdf_bytes, "application/pdf")},
     )
- 
+
     assert response.status_code == 400
     assert response.json()["detail"] == (
         "No extractable text found. Scanned PDFs are not supported in this version."
     )
+
 
 def test_extract_rejects_encrypted_pdf():
     buffer = BytesIO()

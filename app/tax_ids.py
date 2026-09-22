@@ -79,6 +79,7 @@ SUPPLIER_FOOTER_ICE_PATTERN = re.compile(
     re.IGNORECASE | re.VERBOSE | re.MULTILINE,
 )
 
+
 def _canonical_label(raw_label: str) -> str:
     return re.sub(r"\s+", " ", raw_label.strip()).upper()
 
@@ -93,12 +94,14 @@ def extract_tax_id_by_party(text: str) -> dict[str, list[tuple[str, str]]]:
         value = match.group("value").strip()
         if not value:
             continue
-        result.setdefault(party, []).append((label, value))    
+        result.setdefault(party, []).append((label, value))
 
     return result
 
+
 def is_ice_label(label: str) -> bool:
     return label.strip().upper() == "ICE"
+
 
 def is_valid_ice(value: str) -> bool:
     """ICE numbers are 15 digits. Strips formatting characters we
@@ -107,20 +110,20 @@ def is_valid_ice(value: str) -> bool:
     cleaned = value.replace(" ", "")
     return bool(re.fullmatch(r"\d{15}", cleaned))
 
+
 SUPPLIER_TAX_ID_PRIORITY = ["ICE", "IF", "IDENTIFIANT FISCAL", "TAX ID"]
 
 
-def _distinct_values_for_label(entries: list[tuple[str, str]], wanted_label: str) -> set[str]:
+def _distinct_values_for_label(
+    entries: list[tuple[str, str]], wanted_label: str
+) -> set[str]:
     return {value for label, value in entries if label == wanted_label}
 
 
 def extract_customer_ice_from_context(text: str) -> TaxIdResult:
     matches = CUSTOMER_ICE_CONTEXT_PATTERN.finditer(text)
 
-    values = {
-        match.group("value").strip()
-        for match in matches
-    }
+    values = {match.group("value").strip() for match in matches}
 
     if len(values) == 1:
         return TaxIdResult.found("ICE", values.pop())
@@ -129,6 +132,7 @@ def extract_customer_ice_from_context(text: str) -> TaxIdResult:
         return TaxIdResult.conflicting("ICE", values)
 
     return TaxIdResult.missing()
+
 
 def extract_supplier_ice_from_emetteur_section(text: str) -> TaxIdResult:
     section_match = EMETTEUR_SECTION_PATTERN.search(text)
@@ -139,8 +143,7 @@ def extract_supplier_ice_from_emetteur_section(text: str) -> TaxIdResult:
     section = section_match.group("section")
 
     values = {
-        match.group("value").strip()
-        for match in GENERIC_ICE_PATTERN.finditer(section)
+        match.group("value").strip() for match in GENERIC_ICE_PATTERN.finditer(section)
     }
 
     if len(values) == 1:
@@ -161,6 +164,7 @@ def select_supplier_tax_id_result(entries: list[tuple[str, str]]) -> TaxIdResult
             return TaxIdResult.conflicting(wanted_label, values)
     return TaxIdResult.missing()
 
+
 def extract_supplier_ice_from_footer(text: str) -> TaxIdResult:
     values = {
         match.group("value").strip()
@@ -174,6 +178,7 @@ def extract_supplier_ice_from_footer(text: str) -> TaxIdResult:
         return TaxIdResult.conflicting("ICE", values)
 
     return TaxIdResult.missing()
+
 
 def select_customer_ice_result(
     entries: list[tuple[str, str]],

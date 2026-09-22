@@ -56,7 +56,6 @@ def test_is_totals_consistent(
     )
 
 
-
 WARNING = ReviewIssue(
     field="total_amount",
     code="inconsistent_totals",
@@ -70,6 +69,7 @@ ERROR = ReviewIssue(
     message="Invoice number is missing.",
     severity="error",
 )
+
 
 @pytest.mark.parametrize(
     "issues, expected",
@@ -89,6 +89,7 @@ def test_review_result_status(issues, expected):
 
     assert result.status == expected
 
+
 READY_TEXT = (
     "Facture N° 2026/145\n"
     "Date de facture: 05/09/2026\n"
@@ -98,15 +99,15 @@ READY_TEXT = (
     "Total TTC: 1200 MAD\n"
     "Currency: MAD"
 )
- 
- 
+
+
 def test_ready_invoice_returns_invoice_data_with_correct_fields():
     extraction = extract_invoice(READY_TEXT)
     review = review_invoice(extraction)
     assert review.status == "ready"
- 
+
     invoice = finalize_invoice(extraction, review)
- 
+
     assert invoice.invoice_number == "2026/145"
     assert invoice.invoice_date == date(2026, 9, 5)
     assert invoice.total_amount == Decimal("1200")
@@ -118,24 +119,24 @@ def test_blocked_invoice_raises_with_status_and_issues_preserved():
     extraction = extract_invoice("Total TTC: 1200")
     review = review_invoice(extraction)
     assert review.status == "blocked"
- 
+
     with pytest.raises(InvoiceNotReadyError) as exc_info:
         finalize_invoice(extraction, review)
- 
+
     assert exc_info.value.status == "blocked"
     assert exc_info.value.issues == review.issues
     assert len(exc_info.value.issues) > 0
- 
- 
+
+
 def test_needs_review_invoice_raises_with_status_and_issues_preserved():
     # Otherwise-clean invoice, but with an invalid (wrong-length) customer ICE.
     extraction = extract_invoice(READY_TEXT + "\nClient ICE: 12345")
     review = review_invoice(extraction)
     assert review.status == "needs_review"
- 
+
     with pytest.raises(InvoiceNotReadyError) as exc_info:
         finalize_invoice(extraction, review)
- 
+
     assert exc_info.value.status == "needs_review"
     assert exc_info.value.issues == review.issues
     assert len(exc_info.value.issues) > 0
@@ -145,7 +146,7 @@ def _valid_data(**overrides) -> ExtractedInvoiceData:
     values = {
         "invoice_number": "FAC-2026-001",
         "invoice_date": date(2026, 9, 7),
-        "supplier_name" :"ACME SARL",
+        "supplier_name": "ACME SARL",
         "subtotal": Decimal("1000"),
         "tax_amount": Decimal("200"),
         "total_amount": Decimal("1200"),
@@ -173,33 +174,26 @@ def _extraction_result(
 
 
 def test_valid_invoice_is_ready():
-    result = review_invoice(
-        _extraction_result()
-        )
+    result = review_invoice(_extraction_result())
 
     assert result.status == "ready"
     assert result.issues == []
 
 
 def test_missing_required_field_blocks_invoice():
-    result = review_invoice(
-        _extraction_result(
-            data=_valid_data(invoice_number=None)
-        )
-    )
+    result = review_invoice(_extraction_result(data=_valid_data(invoice_number=None)))
 
     assert result.status == "blocked"
 
     assert any(
-        issue.field == "invoice_number"
-        and issue.code == "missing_required_field"
+        issue.field == "invoice_number" and issue.code == "missing_required_field"
         for issue in result.issues
     )
 
 
 def test_missing_currency_blocks_invoice():
     result = review_invoice(
-            _extraction_result(
+        _extraction_result(
             data=_valid_data(currency=None),
             currency_result=CurrencyResult.missing(),
         )
@@ -208,8 +202,7 @@ def test_missing_currency_blocks_invoice():
     assert result.status == "blocked"
 
     assert any(
-        issue.field == "currency"
-        and issue.code == "missing_required_field"
+        issue.field == "currency" and issue.code == "missing_required_field"
         for issue in result.issues
     )
 
@@ -218,23 +211,18 @@ def test_conflicting_currency_blocks_invoice():
     result = review_invoice(
         _extraction_result(
             data=_valid_data(currency=None),
-            currency_result=CurrencyResult.conflicting(
-                {"MAD", "EUR"}
-            ),
+            currency_result=CurrencyResult.conflicting({"MAD", "EUR"}),
         )
     )
 
     assert result.status == "blocked"
 
-    assert any(
-        issue.code == "conflicting_currency"
-        for issue in result.issues
-    )
+    assert any(issue.code == "conflicting_currency" for issue in result.issues)
 
 
 def test_invalid_customer_ice_requires_review():
     result = review_invoice(
-       _extraction_result(
+        _extraction_result(
             data=_valid_data(customer_ICE="12345"),
             customer_ice_result=TaxIdResult.found(
                 "ICE",
@@ -245,27 +233,17 @@ def test_invalid_customer_ice_requires_review():
 
     assert result.status == "needs_review"
 
-    assert any(
-        issue.code == "invalid_ice"
-        for issue in result.issues
-    )
+    assert any(issue.code == "invalid_ice" for issue in result.issues)
 
 
 def test_inconsistent_totals_require_review():
     result = review_invoice(
-        _extraction_result(
-            data=_valid_data(
-                total_amount=Decimal("1300")
-            )
-        )
+        _extraction_result(data=_valid_data(total_amount=Decimal("1300")))
     )
 
     assert result.status == "needs_review"
 
-    assert any(
-        issue.code == "inconsistent_totals"
-        for issue in result.issues
-    )
+    assert any(issue.code == "inconsistent_totals" for issue in result.issues)
 
 
 @pytest.mark.parametrize(
@@ -276,21 +254,14 @@ def test_inconsistent_totals_require_review():
     ],
 )
 def test_incomplete_totals_do_not_create_false_warning(overrides):
-    result = review_invoice(
-      _extraction_result(
-            data=_valid_data(**overrides)
-        )
-    )
+    result = review_invoice(_extraction_result(data=_valid_data(**overrides)))
 
-    assert not any(
-        issue.code == "inconsistent_totals"
-        for issue in result.issues
-    )
+    assert not any(issue.code == "inconsistent_totals" for issue in result.issues)
 
 
 def test_error_takes_priority_over_warning():
     result = review_invoice(
-         _extraction_result(
+        _extraction_result(
             data=_valid_data(
                 invoice_number=None,
                 total_amount=Decimal("1300"),
@@ -298,15 +269,9 @@ def test_error_takes_priority_over_warning():
         )
     )
 
-    assert any(
-        issue.severity == "error"
-        for issue in result.issues
-    )
+    assert any(issue.severity == "error" for issue in result.issues)
 
-    assert any(
-        issue.severity == "warning"
-        for issue in result.issues
-    )
+    assert any(issue.severity == "warning" for issue in result.issues)
 
     assert result.status == "blocked"
 
@@ -326,10 +291,8 @@ def test_conflicting_customer_ice_requires_review():
     )
 
     assert result.status == "needs_review"
-    assert any(
-        issue.code == "conflicting_ice"
-        for issue in result.issues
-    )
+    assert any(issue.code == "conflicting_ice" for issue in result.issues)
+
 
 def test_conflicting_supplier_tax_id_requires_review():
     result = review_invoice(
@@ -345,10 +308,7 @@ def test_conflicting_supplier_tax_id_requires_review():
     )
 
     assert result.status == "needs_review"
-    assert any(
-        issue.code == "conflicting_tax_id"
-        for issue in result.issues
-    )
+    assert any(issue.code == "conflicting_tax_id" for issue in result.issues)
 
 
 def test_missing_supplier_name_blocks_invoice():
@@ -363,7 +323,6 @@ Total TTC: 1200 MAD
 
     assert review.status == "blocked"
     assert any(
-        issue.field == "supplier_name"
-        and issue.code == "missing_required_field"
+        issue.field == "supplier_name" and issue.code == "missing_required_field"
         for issue in review.issues
     )

@@ -24,7 +24,6 @@ async def upload_page():
     return FileResponse(STATIC_DIR / "index.html")
 
 
-
 @app.post("/extract")
 async def extract_invoice_endpoint(file: UploadFile = File(...)):
     text = await read_pdf_text(file)
@@ -32,22 +31,25 @@ async def extract_invoice_endpoint(file: UploadFile = File(...)):
     extraction = extract_invoice(text)
     review = review_invoice(extraction)
 
-    return{
-            "filename": file.filename,
-            "status": review.status,
-            "data": review.data,
-            "issues": review.issues,}
+    return {
+        "filename": file.filename,
+        "status": review.status,
+        "data": review.data,
+        "issues": review.issues,
+    }
 
-EXPORTERS ={
+
+EXPORTERS = {
     "csv": (
-        export_invoice_to_csv, 
+        export_invoice_to_csv,
         "text/csv",
-        ),
-    "xlsx":(
-        export_invoice_to_excel, 
+    ),
+    "xlsx": (
+        export_invoice_to_excel,
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        )
+    ),
 }
+
 
 @app.post("/export")
 async def export_invoice_endpoint(
@@ -64,11 +66,11 @@ async def export_invoice_endpoint(
                 "issues": problems,
             },
         )
- 
+
     export_fn, media_type = EXPORTERS[format]
     safe_filename = sanitize_filename_stem(filename)
     download_filename = f"{safe_filename}.{format}"
- 
+
     tmp_dir = tempfile.mkdtemp()
     output_path = Path(tmp_dir) / download_filename
     try:
@@ -77,11 +79,11 @@ async def export_invoice_endpoint(
         shutil.rmtree(tmp_dir, ignore_errors=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to generate export file"
+            detail="Failed to generate export file",
         ) from e
- 
+
     cleanup = BackgroundTask(shutil.rmtree, tmp_dir, ignore_errors=True)
- 
+
     return FileResponse(
         path=created_path,
         filename=download_filename,

@@ -133,16 +133,16 @@ TOTAL_NEXT_LINE_PATTERN = re.compile(
 )
 
 
-
 def _valid_grouping(number_part: str, sep: str) -> bool:
-    """ True if splitting on `sep` looks like real thousands grouping:
+    """True if splitting on `sep` looks like real thousands grouping:
     first group 1-3 digits, every subsequent group exactly 3 digits."""
     groups = number_part.split(sep)
     if len(groups) < 2:
         return True
-    if not (1<= len(groups[0])<=3):
+    if not (1 <= len(groups[0]) <= 3):
         return False
     return all(len(g) == 3 for g in groups[1:])
+
 
 def normalize_amount(raw: str) -> Decimal | None:
     if raw is None:
@@ -152,14 +152,14 @@ def normalize_amount(raw: str) -> Decimal | None:
     if not text:
         return None
 
-    has_comma= "," in text
-    has_dot ="." in text
+    has_comma = "," in text
+    has_dot = "." in text
 
     if has_comma and has_dot:
         if text.rfind(",") > text.rfind("."):
-            decimal_sep, thousands_sep= ",","."
+            decimal_sep, thousands_sep = ",", "."
         else:
-            decimal_sep, thousands_sep= ".",","
+            decimal_sep, thousands_sep = ".", ","
 
         integer_part = text.split(decimal_sep)[0]
         if not _valid_grouping(integer_part, thousands_sep):
@@ -170,10 +170,10 @@ def normalize_amount(raw: str) -> Decimal | None:
             text = text.replace(",", ".")
 
     elif has_comma:
-        if text.count(",")>1:
+        if text.count(",") > 1:
             if not _valid_grouping(text, ","):
                 return None
-            text = text.replace(",","")
+            text = text.replace(",", "")
         else:
             digits_after = len(text.split(",")[-1])
             if digits_after == 3:
@@ -205,6 +205,7 @@ def extract_subtotal_amount(text: str) -> Decimal | None:
         return None
     return normalize_amount(match.group("value"))
 
+
 def extract_tax_amount(text: str) -> Decimal | None:
     match = TAX_AMOUNT_NEXT_LINE_PATTERN.search(text)
 
@@ -214,6 +215,7 @@ def extract_tax_amount(text: str) -> Decimal | None:
         return None
     return normalize_amount(match.group("value"))
 
+
 def extract_total_amount(text: str) -> Decimal | None:
     match = TOTAL_NEXT_LINE_PATTERN.search(text)
     if not match:
@@ -221,5 +223,3 @@ def extract_total_amount(text: str) -> Decimal | None:
     if not match:
         return None
     return normalize_amount(match.group("value"))
-
-

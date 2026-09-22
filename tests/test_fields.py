@@ -26,11 +26,7 @@ def test_extract_invoice_number(text, expected):
 
 
 def test_extract_invoice_number_from_ref_label():
-    text = (
-        "Facture\n"
-        "Réf. : FA-2026-001\n"
-        "Date : 12/09/2026\n"
-    )
+    text = "Facture\nRéf. : FA-2026-001\nDate : 12/09/2026\n"
 
     assert extract_invoice_number(text) == "FA-2026-001"
 

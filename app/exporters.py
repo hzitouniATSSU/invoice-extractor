@@ -12,7 +12,7 @@ def export_invoice_to_csv(invoice: InvoiceData, output_path: Path) -> Path:
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
     data = invoice.model_dump()
-    fieldnames= list(data.keys())
+    fieldnames = list(data.keys())
 
     row = {}
     for key, value in data.items():
@@ -31,6 +31,7 @@ def export_invoice_to_csv(invoice: InvoiceData, output_path: Path) -> Path:
         writer.writerow(row)
 
     return output_path
+
 
 def export_invoice_to_excel(invoice: InvoiceData, output_path: Path) -> Path:
     output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -57,7 +58,7 @@ def export_invoice_to_excel(invoice: InvoiceData, output_path: Path) -> Path:
 
     for col_idx, key in enumerate(fieldnames, start=1):
         if isinstance(data[key], date):
-            ws.cell(row=2, column=col_idx).number_format="YYYY-MM-DD"
+            ws.cell(row=2, column=col_idx).number_format = "YYYY-MM-DD"
 
     wb.save(output_path)
     return output_path

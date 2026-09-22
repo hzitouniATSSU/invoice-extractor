@@ -8,6 +8,7 @@ _RESERVED_NAMES = (
     | {f"LPT{i}" for i in range(1, 10)}
 )
 
+
 def sanitize_filename_stem(value: str) -> str:
     value = value.strip()
     if not value:
@@ -20,10 +21,7 @@ def sanitize_filename_stem(value: str) -> str:
 
     value = _UNSAFE_WINDOWS_CHARS.sub("", value)
 
-    value = "".join(
-        ch for ch in value
-        if ch.isalnum() or ch in " _-" 
-    )
+    value = "".join(ch for ch in value if ch.isalnum() or ch in " _-")
 
     value = value.strip()
 
