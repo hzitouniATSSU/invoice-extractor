@@ -1,14 +1,12 @@
 from decimal import Decimal
 
 from app.models import (
-    ExtractedInvoiceData,
     ExtractionResult,
     InvoiceData,
     ReviewIssue,
     ReviewResult,
 )
 from app.tax_ids import is_valid_ice
-
 
 
 def review_invoice(extraction: "ExtractionResult") -> ReviewResult:

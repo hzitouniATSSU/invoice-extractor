@@ -1,5 +1,6 @@
 import re
 from datetime import date, datetime
+
 from app.models import CurrencyResult
 
 INVOICE_PATTERN= re.compile(

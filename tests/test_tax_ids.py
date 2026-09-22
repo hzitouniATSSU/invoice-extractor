@@ -1,13 +1,12 @@
 import pytest
 
+from app.pipeline import extract_invoice
 from app.tax_ids import (
+    extract_tax_id_by_party,
     is_valid_ice,
     select_customer_ice_result,
     select_supplier_tax_id_result,
-    extract_tax_id_by_party
 )
-from app.pipeline import extract_invoice
-
 
 
 @pytest.mark.parametrize(

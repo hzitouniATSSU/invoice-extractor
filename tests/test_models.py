@@ -1,9 +1,10 @@
-import pytest
 from datetime import date
 from decimal import Decimal
-from pydantic import ValidationError
-from app.models import InvoiceData
 
+import pytest
+from pydantic import ValidationError
+
+from app.models import InvoiceData
 
 
 def _valid_invoice(**overrides) -> InvoiceData:

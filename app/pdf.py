@@ -1,8 +1,8 @@
-from fastapi import  UploadFile, HTTPException, status
-from pypdf import PdfReader
-from pypdf.errors import PdfReadError, ParseError, FileNotDecryptedError
 import io
 
+from fastapi import HTTPException, UploadFile, status
+from pypdf import PdfReader
+from pypdf.errors import FileNotDecryptedError, ParseError, PdfReadError
 
 MAX_PDF_SIZE_BYTES = 10 * 1024 * 1024
 

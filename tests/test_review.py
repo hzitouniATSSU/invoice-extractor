@@ -1,16 +1,22 @@
-import pytest
-from decimal import Decimal
 from datetime import date
+from decimal import Decimal
 
-from app.pipeline import extract_invoice
-from app.review import is_totals_consistent, review_invoice, finalize_invoice, InvoiceNotReadyError 
-from app.models import ExtractedInvoiceData, ReviewResult, ReviewIssue
+import pytest
+
 from app.models import (
-    ExtractedInvoiceData,
     CurrencyResult,
+    ExtractedInvoiceData,
     ExtractionResult,
+    ReviewIssue,
+    ReviewResult,
     TaxIdResult,
-    InvoiceData
+)
+from app.pipeline import extract_invoice
+from app.review import (
+    InvoiceNotReadyError,
+    finalize_invoice,
+    is_totals_consistent,
+    review_invoice,
 )
 
 
@@ -304,26 +310,6 @@ def test_error_takes_priority_over_warning():
 
     assert result.status == "blocked"
 
-
-def test_conflicting_customer_ice_requires_review():
-    result = review_invoice(
-        _extraction_result(
-            data=_valid_data(customer_ICE=None),
-            customer_ice_result=TaxIdResult.conflicting(
-                "ICE",
-                {
-                    "001234567000001",
-                    "009876543000002",
-                },
-            ),
-        )
-    )
-
-    assert result.status == "needs_review"
-    assert any(
-        issue.code == "conflicting_ice"
-        for issue in result.issues
-    )
 
 def test_conflicting_customer_ice_requires_review():
     result = review_invoice(

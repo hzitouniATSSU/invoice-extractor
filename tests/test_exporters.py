@@ -1,8 +1,12 @@
+import csv
 from datetime import date, datetime
 from decimal import Decimal
-import csv, openpyxl
-from app.models import InvoiceData
+
+import openpyxl
+
 from app.exporters import export_invoice_to_csv, export_invoice_to_excel
+from app.models import InvoiceData
+
 
 def _valid_invoice(**overrides) -> InvoiceData:
     base = dict(

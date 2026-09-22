@@ -1,10 +1,12 @@
-import pytest
 from decimal import Decimal
+
+import pytest
+
 from app.amounts import (
     extract_subtotal_amount,
     extract_tax_amount,
     extract_total_amount,
-      normalize_amount
+    normalize_amount,
 )
 
 

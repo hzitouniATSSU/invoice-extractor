@@ -1,14 +1,13 @@
+from datetime import date
+
 import pytest
-from datetime import date,datetime
-from app.models import CurrencyResult
+
 from app.fields import (
-    extract_invoice_number,
-    extract_invoice_date,
     extract_currency,
+    extract_invoice_date,
+    extract_invoice_number,
 )
-
-
-
+from app.models import CurrencyResult
 
 
 @pytest.mark.parametrize(

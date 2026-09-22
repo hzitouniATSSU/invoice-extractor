@@ -1,9 +1,9 @@
-from pydantic import BaseModel,field_validator
+from dataclasses import dataclass, field
 from datetime import date
-from typing import Optional,Literal
 from decimal import Decimal
-from dataclasses import dataclass,field
+from typing import Literal, Optional
 
+from pydantic import BaseModel, field_validator
 
 SUPPORTED_CURRENCIES = {"MAD", "EUR", "USD", "CAD", "AUD", "GBP", "JPY"}
 

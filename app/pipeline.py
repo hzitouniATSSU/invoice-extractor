@@ -1,27 +1,23 @@
 
-from app.models import ExtractedInvoiceData, ExtractionResult
-from app.tax_ids import (
-    extract_tax_id_by_party,
-    extract_customer_ice_from_context,
-    extract_supplier_ice_from_footer,
-    extract_supplier_ice_from_emetteur_section,
-    select_customer_ice_result,
-    select_supplier_tax_id_result,
-)
 from app.amounts import (
     extract_subtotal_amount,
     extract_tax_amount,
     extract_total_amount,
 )
-from app.parties import (
-    extract_customer_name,
-    extract_supplier_name
-
-)
 from app.fields import (
     extract_currency,
     extract_invoice_date,
     extract_invoice_number,
+)
+from app.models import ExtractedInvoiceData, ExtractionResult
+from app.parties import extract_customer_name, extract_supplier_name
+from app.tax_ids import (
+    extract_customer_ice_from_context,
+    extract_supplier_ice_from_emetteur_section,
+    extract_supplier_ice_from_footer,
+    extract_tax_id_by_party,
+    select_customer_ice_result,
+    select_supplier_tax_id_result,
 )
 
 

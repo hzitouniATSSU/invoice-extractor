@@ -8,8 +8,6 @@ import openpyxl
 from app.models import InvoiceData
 
 
-
-
 def export_invoice_to_csv(invoice: InvoiceData, output_path: Path) -> Path:
     output_path.parent.mkdir(parents=True, exist_ok=True)
 

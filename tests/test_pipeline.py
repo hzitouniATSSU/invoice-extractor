@@ -1,9 +1,9 @@
 from datetime import date
 from decimal import Decimal
 
-from app.pipeline import extract_invoice_data, extract_invoice
-from app.review import review_invoice
 from app.models import CurrencyResult
+from app.pipeline import extract_invoice, extract_invoice_data
+from app.review import review_invoice
 
 
 def test_extract_invoice_data_populates_expected_fields():

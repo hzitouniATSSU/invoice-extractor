@@ -1,7 +1,5 @@
-from decimal import Decimal, InvalidOperation
 import re
-
-
+from decimal import Decimal, InvalidOperation
 
 SUBTOTAL_PATTERN = re.compile(
     r"""

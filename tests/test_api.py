@@ -1,16 +1,15 @@
-import  csv, openpyxl
-from fastapi.testclient import TestClient
-from app.main import app
+import csv
 import io
+from io import BytesIO
+
+from fastapi.testclient import TestClient
+from pypdf import PdfWriter
+from reportlab.pdfgen import canvas
+
+from app.main import app
+from app.pdf import MAX_PDF_SIZE_BYTES
 
 client = TestClient(app)
-
-
-
-from pypdf import PdfWriter
-from io import BytesIO
-from reportlab.pdfgen import canvas
-from app.pdf import MAX_PDF_SIZE_BYTES
 
 
 def _make_pdf(text: str) -> bytes:
@@ -218,7 +217,7 @@ Total TTC: 1200 MAD
 #===================================================
 # PDF text extraction with error Handling
 #===================================================
-def test_export_endpoint_returns_csv():
+def test_extract_then_export_csv():
     pdf_bytes = _make_pdf(READY_TEXT)
 
     extract_response = client.post(
@@ -248,7 +247,7 @@ def test_export_endpoint_returns_csv():
     assert row["currency"] == "MAD"
 
 
-def test_export_endpoint_returns_xlsx():
+def test_extract_then_export_xlsx():
     pdf_bytes = _make_pdf(READY_TEXT)
 
     extract_response = client.post(

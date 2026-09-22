@@ -1,4 +1,5 @@
 import re
+
 from app.models import TaxIdResult
 
 PARTY_MAP = {
