@@ -394,3 +394,39 @@ def test_extract_rejects_encrypted_pdf():
     assert response.json()["detail"] == (
         "Password-protected or encrypted PDFs are not supported."
     )
+
+
+def test_blocked_invoice_can_be_corrected_and_exported():
+    pdf_bytes = _make_pdf("""
+Invoice No: FAC-015
+Invoice Date: 2026-08-29
+Subtotal: 600 MAD
+Tax: 120 MAD
+Total TTC: 720 MAD
+Customer: Mint Cafe
+""")
+
+    extract_response = client.post(
+        "/extract",
+        files={"file": ("invoice.pdf", pdf_bytes, "application/pdf")},
+    )
+
+    assert extract_response.status_code == 200
+
+    payload = extract_response.json()
+    assert payload["status"] == "blocked"
+    assert payload["data"]["supplier_name"] is None
+
+    corrected = payload["data"]
+    corrected["supplier_name"] = "ACME SARL"
+
+    export_response = client.post(
+        "/export?format=csv&filename=corrected-invoice",
+        json=corrected,
+    )
+
+    assert export_response.status_code == 200
+
+    rows = list(csv.DictReader(io.StringIO(export_response.text)))
+    assert len(rows) == 1
+    assert rows[0]["supplier_name"] == "ACME SARL"
