@@ -1,12 +1,13 @@
 import csv
 import io
+import os
 from io import BytesIO
 
 from fastapi.testclient import TestClient
 from pypdf import PdfWriter
 from reportlab.pdfgen import canvas
 
-from app.main import app
+from app.main import EXPORTERS, app
 from app.pdf import MAX_PDF_SIZE_BYTES
 
 client = TestClient(app)
@@ -444,3 +445,39 @@ def test_health_endpoint():
 
     assert response.status_code == 200
     assert response.json() == {"status": "ok"}
+
+
+def test_export_removes_temporary_directory_after_response(tmp_path, monkeypatch):
+    export_dir = tmp_path / "export-temp"
+
+    def fake_mkdtemp(*args, **kwargs):
+        path_str = str(export_dir)
+        os.makedirs(path_str, exist_ok=True)
+        return path_str
+
+    monkeypatch.setattr("app.main.tempfile.mkdtemp", fake_mkdtemp)
+
+    response = client.post("/export", json=VALID_INVOICE, params={"format": "csv"})
+
+    assert response.status_code == 200
+    assert not export_dir.exists()
+
+
+def test_export_removes_temporary_directory_when_export_fails(tmp_path, monkeypatch):
+    export_dir = tmp_path / "export-temp"
+
+    def fake_mkdtemp(*args, **kwargs):
+        path_str = str(export_dir)
+        os.makedirs(path_str, exist_ok=True)
+        return path_str
+
+    def failing_exporter(invoice, output_path):
+        raise RuntimeError("deliberate failure")
+
+    monkeypatch.setitem(EXPORTERS, "csv", (failing_exporter, "text/csv"))
+
+    response = client.post("/export", json=VALID_INVOICE, params={"format": "csv"})
+
+    assert response.status_code == 500
+    assert not export_dir.exists()
+    assert response.json()["detail"] == "Failed to generate export file"
