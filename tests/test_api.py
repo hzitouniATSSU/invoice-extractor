@@ -437,3 +437,10 @@ Customer: Mint Cafe
     rows = list(csv.DictReader(io.StringIO(export_response.text)))
     assert len(rows) == 1
     assert rows[0]["supplier_name"] == "ACME SARL"
+
+
+def test_health_endpoint():
+    response = client.get("/health")
+
+    assert response.status_code == 200
+    assert response.json() == {"status": "ok"}

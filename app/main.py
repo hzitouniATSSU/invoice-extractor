@@ -90,3 +90,8 @@ async def export_invoice_endpoint(
         media_type=media_type,
         background=cleanup,
     )
+
+
+@app.get("/health")
+async def health_check():
+    return {"status": "ok"}
