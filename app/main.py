@@ -1,5 +1,7 @@
+import logging
 import shutil
 import tempfile
+import uuid
 from pathlib import Path
 from typing import Literal
 
@@ -9,12 +11,16 @@ from starlette.background import BackgroundTask
 
 from app.exporters import export_invoice_to_csv, export_invoice_to_excel
 from app.filenames import sanitize_filename_stem
+from app.logging_config import configure_logging
 from app.models import InvoiceData
 from app.pdf import read_pdf_text
 from app.pipeline import extract_invoice
 from app.review import review_invoice, validate_invoice_data
 
+configure_logging()
 app = FastAPI()
+
+logger = logging.getLogger(__name__)
 
 STATIC_DIR = Path(__file__).parent / "static"
 
@@ -26,11 +32,24 @@ async def upload_page():
 
 @app.post("/extract")
 async def extract_invoice_endpoint(file: UploadFile = File(...)):
-    text = await read_pdf_text(file)
-
+    request_id = str(uuid.uuid4())
+    logger.info(
+        "Extraction request received request_id=%s content_type=%s",
+        request_id,
+        file.content_type,
+    )
+    try:
+        text = await read_pdf_text(file)
+    except HTTPException as exc:
+        logger.warning(
+            "PDF rejected request_id=%s status_code=%s", request_id, exc.status_code
+        )
+        raise
     extraction = extract_invoice(text)
     review = review_invoice(extraction)
-
+    logger.info(
+        "Extraction completed request_id=%s review_status=%s", request_id, review.status
+    )
     return {
         "filename": file.filename,
         "status": review.status,
