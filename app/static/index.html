@@ -249,6 +249,32 @@
     statusLine.classList.toggle("error", Boolean(isError));
   }
 
+  function getErrorMessage(payload, fallback) {
+    if (payload && typeof payload.detail === "string") {
+      return payload.detail;
+    }
+
+    if (payload?.detail && typeof payload.detail.message === "string") {
+      return payload.detail.message;
+    }
+
+    if (Array.isArray(payload?.detail)) {
+      const messages = payload.detail
+        .map((error) => {
+          const field = error.loc?.at(-1);
+          const match = INVOICE_FIELDS.find(([key]) => key === field);
+          const label = match ? match.at(1) : field;
+
+          return `${field ? `${label}: ` : ""}${error.msg}`;
+        })
+        .join(" ");
+
+      return messages || fallback;
+    }
+
+    return fallback;
+  }
+
   function requireFile() {
     const file = fileInput.files[0];
     if (!file) {
@@ -403,10 +429,7 @@
       const payload = await response.json();
 
       if (!response.ok) {
-        const detail = typeof payload.detail === "string"
-          ? payload.detail
-          : (payload.detail && payload.detail.message) || "Extraction failed.";
-        setStatus(detail, true);
+        setStatus(getErrorMessage(payload, "Extraction failed."), true);
         return;
       }
 
@@ -446,9 +469,7 @@
 
       if (!response.ok) {
         const payload = await response.json().catch(() => ({}));
-        const detail = typeof payload.detail === "string"
-          ? payload.detail
-          : (payload.detail && payload.detail.message) || "Export failed.";
+        const detail = getErrorMessage(payload, "Export failed.");
         const issues = payload.detail && payload.detail.issues;
         const fullMessage = Array.isArray(issues) && issues.length
           ? `${detail} ${issues.join(" ")}`
