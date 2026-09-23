@@ -4,7 +4,9 @@ from fastapi import HTTPException, UploadFile, status
 from pypdf import PdfReader
 from pypdf.errors import FileNotDecryptedError, ParseError, PdfReadError
 
-MAX_PDF_SIZE_BYTES = 10 * 1024 * 1024
+from app.config import MAX_PDF_SIZE_MB
+
+MAX_PDF_SIZE_BYTES = MAX_PDF_SIZE_MB * 1024 * 1024
 
 
 async def read_pdf_text(file: UploadFile) -> str:
@@ -18,7 +20,7 @@ async def read_pdf_text(file: UploadFile) -> str:
     if len(contents) > MAX_PDF_SIZE_BYTES:
         raise HTTPException(
             status_code=status.HTTP_413_CONTENT_TOO_LARGE,
-            detail="PDF exceeds the 10 MB limit.",
+            detail=f"PDF exceeds the {MAX_PDF_SIZE_MB} MB limit.",
         )
 
     try:
