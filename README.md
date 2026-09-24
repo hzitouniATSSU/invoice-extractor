@@ -1,7 +1,7 @@
 # Invoice Extractor
 ![Python](https://img.shields.io/badge/Python-3.13-blue)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.141.1-009688)
-![Tests](https://img.shields.io/badge/tests-178%20passed-brightgreen)
+![Tests](https://img.shields.io/badge/tests-187%20passed-brightgreen)
 
 ## Live Demo
 
@@ -72,18 +72,20 @@ The application is organized by responsibility so that extraction, validation, A
 
 ```text
 app/
-├── pdf.py         # PDF validation and text extraction
-├── fields.py      # Invoice number, invoice date, and currency extraction
-├── amounts.py     # Amount normalization and subtotal/tax/total extraction
-├── parties.py     # Supplier and customer name extraction
-├── tax_ids.py     # Party-aware ICE / IF / tax identifier extraction
-├── models.py      # Domain models and extraction/review result types
-├── pipeline.py    # Coordinates field extractors into an ExtractionResult
-├── review.py      # Validation, review classification, and finalization
-├── exporters.py   # CSV and Excel generation
-├── main.py        # FastAPI endpoints and HTTP orchestration
+├── pdf.py            # PDF validation and text extraction
+├── config.py         # Environment-based application configuration
+├── logging_config.py # Application logging configuration
+├── fields.py         # Invoice number, invoice date, and currency extraction
+├── amounts.py        # Amount normalization and subtotal/tax/total extraction
+├── parties.py        # Supplier and customer name extraction
+├── tax_ids.py        # Party-aware ICE / IF / tax identifier extraction
+├── models.py         # Domain models and extraction/review result types
+├── pipeline.py       # Coordinates field extractors into an ExtractionResult
+├── review.py         # Validation, review classification, and finalization
+├── exporters.py      # CSV and Excel generation
+├── main.py           # FastAPI endpoints and HTTP orchestration
 └── static/
-    └── index.html # Browser-based review and correction interface
+    └── index.html    # Browser-based review and correction interface
 ```
 The extraction and review flow is:
 ```text
@@ -190,6 +192,20 @@ Before generating the file, the submitted data passes through two layers of vali
 
 If validation succeeds, the endpoint returns the generated CSV or Excel file as a download.
 
+## Production Hardening
+
+The deployed MVP includes several safeguards and operational features beyond the core extraction workflow:
+
+- Environment-based configuration for deployment settings
+- Configurable PDF upload-size limit
+- PDF content-type, structure, encryption, and extractable-text validation
+- Request IDs and structured application logging for extraction requests
+- `/health` endpoint for service health checks
+- Temporary export directories cleaned up after successful downloads and export failures
+- API validation errors translated into readable frontend messages
+- Accessible status announcements and field-level validation relationships
+- Responsive browser interface verified at narrow mobile widths
+
 ## Installation
 
 ### Prerequisites
@@ -261,7 +277,7 @@ The current MVP has been validated through automated tests, synthetic invoice sa
 
 ### Automated Tests
 
-The test suite currently contains **160 passing tests** covering:
+The test suite currently contains **187 passing tests** covering:
 
 - Invoice number, date, and currency extraction
 - Amount parsing and normalization
@@ -272,6 +288,10 @@ The test suite currently contains **160 passing tests** covering:
 - CSV and Excel generation
 - FastAPI `/extract` and `/export` endpoints
 - Strict `InvoiceData` model validation
+- PDF type and upload-size validation
+- Environment-based application configuration
+- Export temporary-file cleanup on success and failure
+- Application health endpoint
 
 ### Synthetic Invoice Pack
 
@@ -309,18 +329,20 @@ The exported file contained the user-corrected structured data, confirming that 
 invoice-extractor/
 ├── app/
 │   ├── __init__.py
-│   ├── pdf.py          # PDF validation and text extraction
-│   ├── fields.py       # Invoice number, date, and currency extraction
-│   ├── amounts.py      # Amount normalization and subtotal/tax/total extraction
-│   ├── parties.py      # Supplier and customer name extraction
-│   ├── tax_ids.py      # Party-aware ICE / IF / tax ID extraction
-│   ├── pipeline.py     # Coordinates extractors into an ExtractionResult
-│   ├── review.py       # Validation, review classification, and finalization
-│   ├── models.py       # Domain models and extraction/review result types
-│   ├── exporters.py    # CSV and Excel export
-│   ├── main.py         # FastAPI application and HTTP endpoints
+│   ├── pdf.py            # PDF validation and text extraction
+│   ├── config.py         # Environment-based application configuration
+│   ├── logging_config.py # Application logging configuration
+│   ├── fields.py         # Invoice number, date, and currency extraction
+│   ├── amounts.py        # Amount normalization and subtotal/tax/total extraction
+│   ├── parties.py        # Supplier and customer name extraction
+│   ├── tax_ids.py        # Party-aware ICE / IF / tax ID extraction
+│   ├── pipeline.py       # Coordinates extractors into an ExtractionResult
+│   ├── review.py         # Validation, review classification, and finalization
+│   ├── models.py         # Domain models and extraction/review result types
+│   ├── exporters.py      # CSV and Excel export
+│   ├── main.py           # FastAPI application and HTTP endpoints
 │   └── static/
-│       └── index.html  # Browser review and correction interface
+│       └── index.html    # Browser review and correction interface
 │
 ├── tests/
 │   ├── test_fields.py
@@ -333,7 +355,7 @@ invoice-extractor/
 │   ├── test_exporters.py
 │   └── test_api.py
 │
-├── samples/            # Sample invoices used during development
+├── samples/             # Sample invoices used during development
 ├── requirements.txt
 ├── README.md
 └── .gitignore
