@@ -191,6 +191,13 @@
     padding-top: 0.75rem;
     border-top: 1px dashed var(--line);
   }
+
+  .field-hint {
+    margin: -0.5rem 0 1rem;
+    color: var(--muted);
+    font-size: 0.8rem;
+  }
+
 </style>
 </head>
 <body>
@@ -204,17 +211,20 @@
   <div class="panel">
     <label for="file-input">Invoice PDF</label>
     <input type="file" id="file-input" accept="application/pdf" />
-
+    <p class="field-hint">
+      Text-based PDFs only (max 10 MB). Uploaded invoices are processed
+      transiently and are not permanently stored by the application.
+    </p>
     <div class="actions">
       <button type="button" class="primary" id="preview-btn">Extract</button>
-      <select id="format-select">
+      <select id="format-select" aria-label="Export format">
         <option value="csv">CSV</option>
         <option value="xlsx">Excel</option>
       </select>
       <button type="button" class="secondary" id="export-btn" disabled>Download</button>
     </div>
 
-    <div id="status-line"></div>
+    <div id="status-line" aria-live="polite"></div>
   </div>
 
   <div id="result"></div>
@@ -289,6 +299,12 @@
     exportBtn.disabled = busy || !currentFilenameStem;
   }
 
+  const STATUS_LABELS = {
+      ready: "Ready to export",
+      needs_review: "Review recommended",
+      blocked: "Correction required"
+    };
+
   // One entry per InvoiceData field. `type` picks the HTML input type;
   // date fields already arrive as "YYYY-MM-DD" from the backend, which is
   // exactly the format <input type="date"> expects.
@@ -316,7 +332,8 @@
 
     const badge = document.createElement("span");
     badge.className = `badge ${payload.status}`;
-    badge.textContent = payload.status.replace("_", " ");
+    badge.textContent =
+      STATUS_LABELS[payload.status] || payload.status.replace("_", " ");
     panel.appendChild(badge);
 
     const form = document.createElement("form");
@@ -344,6 +361,10 @@
       input.type = inputType;
       input.id = fieldId;
       input.name = key;
+      if (hasError) {
+        input.setAttribute("aria-invalid", "true");
+      }
+
       // Every field shows, even ones that came back empty -- that's the
       // point of an editable form: filling in exactly what's missing.
       const value = data[key];
@@ -351,11 +372,21 @@
       if (inputType === "number") input.step = "0.01";
       row.appendChild(input);
 
-      for (const issue of fieldIssues) {
+      const issueIds = [];
+
+      for (const [index, issue] of fieldIssues.entries()) {
+        const issueId = `${fieldId}-issue-${index}`;
+        issueIds.push(issueId);
+
         const message = document.createElement("p");
+        message.id = issueId;
         message.className = `field-message ${issue.severity === "error" ? "issue-error" : "issue-warning"}`;
         message.textContent = issue.message;
         row.appendChild(message);
+      }
+
+      if (issueIds.length) {
+        input.setAttribute("aria-describedby", issueIds.join(" "));
       }
 
       // If this field had an extraction issue, clear the stale
@@ -370,6 +401,8 @@
           "input",
           () => {
             row.classList.remove("has-error", "has-warning");
+            input.removeAttribute("aria-invalid");
+            input.removeAttribute("aria-describedby");
             row.querySelectorAll(".field-message").forEach((el) => el.remove());
             row.classList.add("edited");
             const note = document.createElement("p");
