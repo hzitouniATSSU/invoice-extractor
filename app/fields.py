@@ -23,22 +23,39 @@ INVOICE_PATTERN = re.compile(
 )
 
 
-DATE_PATTERN = re.compile(
+DATE_VALUE = r"""
+    [ \t]*[:\-]?[ \t]*
+    (?P<value>\d{1,4}[/.\-]\d{1,2}[/.\-]\d{1,4})
+"""
+
+INVOICE_DATE_PATTERN = re.compile(
     r"""
     (?:
     invoice[ \t]*date
+    |
+    issue[ \t]*date
     |
     date[ \t]*de[ \t]*facture
     |
     date[ \t]*facture
     |
-    date
-    |
     facture[ \t]*du
     )
-    [ \t]*[:\-]?[ \t]*
-    (?P<value>\d{1,4}[/.\-]\d{1,2}[/.\-]\d{1,4})
-""",
+    """
+    + DATE_VALUE,
+    re.IGNORECASE | re.VERBOSE,
+)
+
+# A bare "Date" label, used only when no explicit invoice-date label exists.
+# A word directly before it ("Due Date", "Order Date", "Delivery Date")
+# qualifies it as some other date, so it is skipped. Two or more spaces are
+# a column gap, not a qualifier.
+BARE_DATE_PATTERN = re.compile(
+    r"""
+    (?<![^\W\d_][ \t])
+    \bdate
+    """
+    + DATE_VALUE,
     re.IGNORECASE | re.VERBOSE,
 )
 
@@ -81,7 +98,7 @@ def extract_invoice_number(text: str) -> str | None:
 
 
 def extract_invoice_date(text: str) -> date | None:
-    match = DATE_PATTERN.search(text)
+    match = INVOICE_DATE_PATTERN.search(text) or BARE_DATE_PATTERN.search(text)
     if not match:
         return None
 
