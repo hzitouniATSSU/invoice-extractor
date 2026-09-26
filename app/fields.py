@@ -3,22 +3,44 @@ from datetime import date, datetime
 
 from app.models import CurrencyResult
 
+# Dots are allowed inside a number ("2026.0045") but never at its end, so a
+# sentence-final period is not captured.
+INVOICE_NUMBER_VALUE = r"""
+    [ \t]*[:\-]?[ \t]*
+    (?P<number>
+        (?=[A-Za-z0-9/_.-]*\d)
+        [A-Za-z0-9]
+        (?:[A-Za-z0-9/_-]|\.(?=[A-Za-z0-9]))*
+    )
+"""
+
 INVOICE_PATTERN = re.compile(
     r"""
     (?:
-    invoice[ \t]*no\.?
+    invoice[ \t]*n[°o]\.?
     |
     invoice[ \t]*number
     |
+    invoice[ \t]*\#
+    |
     facture[ \t]*n[°o]
     |
-    n[°o][ \t]*facture
+    n[°o][ \t]*(?:de[ \t]+)?facture
     |
-    réf[ \t]*\.?
+    num[ée]ro[ \t]+de[ \t]+facture
     )
-    [ \t]*[:\-]?[ \t]*
-    (?P<number>(?=[A-Za-z0-9/_-]*\d)[A-Za-z0-9][A-Za-z0-9/_-]*)
-    """,
+    """
+    + INVOICE_NUMBER_VALUE,
+    re.IGNORECASE | re.VERBOSE,
+)
+
+# "Réf" is also used for purchase-order and quote references, so it is only
+# a fallback when no explicit invoice-number label is present.
+REFERENCE_PATTERN = re.compile(
+    r"""
+    réf[ \t]*\.?
+    """
+    + INVOICE_NUMBER_VALUE,
     re.IGNORECASE | re.VERBOSE,
 )
 
@@ -91,7 +113,7 @@ SYMBOL_TO_CANONICAL = {
 
 
 def extract_invoice_number(text: str) -> str | None:
-    match = INVOICE_PATTERN.search(text)
+    match = INVOICE_PATTERN.search(text) or REFERENCE_PATTERN.search(text)
     if match:
         return match.group("number")
     return None

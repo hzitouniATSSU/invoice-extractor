@@ -25,6 +25,43 @@ def test_extract_invoice_number(text, expected):
     assert extract_invoice_number(text) == expected
 
 
+@pytest.mark.parametrize(
+    "text, expected",
+    [
+        ("Facture N° 2026.0045", "2026.0045"),
+        ("Invoice No: INV.2026.07", "INV.2026.07"),
+        ("Invoice No: FAC-001.", "FAC-001"),
+        ("Facture N° 145/2026. Date : 12/09/2026", "145/2026"),
+        ("Invoice #: INV-2026-07", "INV-2026-07"),
+        ("Invoice # 5521", "5521"),
+        ("Invoice N° 5521", "5521"),
+        ("N° de facture : FA-2026-31", "FA-2026-31"),
+        ("Numéro de facture : FA-2026-32", "FA-2026-32"),
+    ],
+)
+def test_extract_invoice_number_label_and_separator_variants(text, expected):
+    assert extract_invoice_number(text) == expected
+
+
+def test_explicit_invoice_number_label_wins_over_earlier_reference():
+    text = "Votre réf : BC-2026-778\nFacture N° FA-2026-0031\n"
+
+    assert extract_invoice_number(text) == "FA-2026-0031"
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Invoice notes: payable within 30 days",
+        "Numéro client : CL-0042",
+        "Invoice Number\nINV-77",
+        "Facture N° : ...",
+    ],
+)
+def test_extract_invoice_number_negative_cases(text):
+    assert extract_invoice_number(text) is None
+
+
 def test_extract_invoice_number_from_ref_label():
     text = "Facture\nRéf. : FA-2026-001\nDate : 12/09/2026\n"
 
