@@ -124,3 +124,29 @@ def test_extract_total_amount_when_value_is_on_next_line():
     text = "Total TTC\n11 040,00\n"
 
     assert extract_total_amount(text) == Decimal("11040.00")
+
+
+def test_labelled_grand_total_wins_over_earlier_bare_total():
+    text = "Total : 1 000,00 DH\nTVA 20% : 200,00 DH\nTotal TTC : 1 200,00 DH\n"
+
+    assert extract_total_amount(text) == Decimal("1200.00")
+
+
+def test_bare_total_is_still_used_without_a_labelled_grand_total():
+    text = "Subtotal: 1,000.00\nTax: 100.00\nTotal: 1,100.00\n"
+
+    assert extract_total_amount(text) == Decimal("1100.00")
+
+
+@pytest.mark.parametrize(
+    "text, expected",
+    [
+        ("TVA : 20 %\nTotal TVA : 200,00 DH", Decimal("200.00")),
+        ("TVA 20 %\nTotal TVA : 200,00 DH", Decimal("200.00")),
+        ("TVA : 20 %", None),
+        ("VAT: 20%", None),
+        ("TVA : 7,5 %", None),
+    ],
+)
+def test_tax_rate_is_not_read_as_tax_amount(text, expected):
+    assert extract_tax_amount(text) == expected

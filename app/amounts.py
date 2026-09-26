@@ -64,6 +64,7 @@ TAX_AMOUNT_PATTERN = re.compile(
     [ \t]*[:\-]?[ \t]*
 
     (?P<value>\d[\d .,]*\d|\d)
+    (?!\d|[.,]\d|[ \t]*%)  # a value followed by "%" is a rate, not an amount
     """,
     re.IGNORECASE | re.VERBOSE | re.MULTILINE,
 )
@@ -95,42 +96,48 @@ TAX_AMOUNT_NEXT_LINE_PATTERN = re.compile(
     \n
     [ \t]*
     (?P<value>\d[\d .,]*\d|\d)
+    (?!\d|[.,]\d|[ \t]*%)  # a value followed by "%" is a rate, not an amount
     """,
     re.IGNORECASE | re.VERBOSE | re.MULTILINE,
 )
-TOTAL_PATTERN = re.compile(
-    r"""
-    (?:^|[ \t]{2,})
-    (?:
-        total[ \t]*ttc
-        |
-        montant[ \t]*ttc
-        |
-        total
+
+
+def _total_patterns(labels: str) -> tuple[re.Pattern[str], re.Pattern[str]]:
+    """Next-line and same-line patterns for one tier of total labels."""
+    next_line = re.compile(
+        rf"""
+        ^[ \t]*
+        (?:{labels})
+        [ \t]*:?[ \t]*
+        $
+        \n
+        [ \t]*
+        (?P<value>\d[\d .,]*\d|\d)
+        """,
+        re.IGNORECASE | re.VERBOSE | re.MULTILINE,
     )
-    [ \t]*:?[ \t]*
-    (?P<value>\d[\d .,]*\d|\d)
-    """,
-    re.IGNORECASE | re.VERBOSE | re.MULTILINE,
-)
-TOTAL_NEXT_LINE_PATTERN = re.compile(
-    r"""
-    ^[ \t]*
-    (?:
-        Total[ \t]*TTC
-        |
-        Montant[ \t]*TTC
-        |
-        Total
+    same_line = re.compile(
+        rf"""
+        (?:^|[ \t]{{2,}})
+        (?:{labels})
+        [ \t]*:?[ \t]*
+        (?P<value>\d[\d .,]*\d|\d)
+        """,
+        re.IGNORECASE | re.VERBOSE | re.MULTILINE,
     )
-    [ \t]*:?[ \t]*
-    $
-    \n
-    [ \t]*
-    (?P<value>\d[\d .,]*\d|\d)
-    """,
-    re.IGNORECASE | re.VERBOSE | re.MULTILINE,
-)
+    return next_line, same_line
+
+
+# Tiers are searched in order: an explicitly tax-inclusive total wins over a
+# bare "Total", which may be a pre-tax or pre-discount figure.
+TOTAL_LABEL_TIERS = [
+    r"total[ \t]*ttc | montant[ \t]*ttc",
+    r"total",
+]
+
+TOTAL_PATTERNS = [
+    pattern for labels in TOTAL_LABEL_TIERS for pattern in _total_patterns(labels)
+]
 
 
 def _valid_grouping(number_part: str, sep: str) -> bool:
@@ -217,9 +224,8 @@ def extract_tax_amount(text: str) -> Decimal | None:
 
 
 def extract_total_amount(text: str) -> Decimal | None:
-    match = TOTAL_NEXT_LINE_PATTERN.search(text)
-    if not match:
-        match = TOTAL_PATTERN.search(text)
-    if not match:
-        return None
-    return normalize_amount(match.group("value"))
+    for pattern in TOTAL_PATTERNS:
+        match = pattern.search(text)
+        if match:
+            return normalize_amount(match.group("value"))
+    return None
