@@ -110,3 +110,23 @@ Total TTC: 1200 MAD
 
     assert review.status == "needs_review"
     assert any(issue.code == "conflicting_ice" for issue in review.issues)
+
+
+def test_pipeline_reads_amounts_grouped_with_non_breaking_spaces():
+    # French number formatting often uses U+00A0 / U+202F as the
+    # thousands separator; they must not truncate the amount to "1".
+    text = (
+        "Facture N° FA-2026-0142\n"
+        "Date : 14/09/2026\n"
+        "Fournisseur : Menara Bureautique SARL\n"
+        "Total HT : 1 000,00 DH\n"
+        "TVA 20% : 200,00 DH\n"
+        "Total TTC : 1 200,00 DH\n"
+    )
+
+    extraction = extract_invoice(text)
+    review = review_invoice(extraction)
+
+    assert extraction.data.subtotal == Decimal("1000.00")
+    assert extraction.data.total_amount == Decimal("1200.00")
+    assert review.status == "ready"
