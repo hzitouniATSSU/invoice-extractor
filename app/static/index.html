@@ -3,20 +3,37 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="color-scheme" content="light" />
 <title>Invoice Extractor</title>
 <style>
   :root {
     --ink: #1c2530;
-    --paper: #fbfaf8;
+    --muted: #6b6459;
+    --paper: #f5f4f0;
+    --surface: #ffffff;
     --line: #dcd7cd;
+    --line-strong: #c4beb1;
     --accent: #2f6f4f;
+    --accent-dark: #245a3f;
+    --accent-soft: #e3f1e9;
     --accent-ink: #ffffff;
     --error: #a3382c;
-    --muted: #6b6459;
+    --error-soft: #f7e4e1;
+    --error-line: #e0b6ae;
+    --warning: #8a5a10;
+    --warning-soft: #fbeecf;
     --edited: #4a6a8a;
+    --focus-ring: #2f6f4f;
+    --radius: 8px;
+    --shadow-sm: 0 1px 2px rgba(28, 37, 48, 0.06);
   }
 
   * { box-sizing: border-box; }
+
+  :focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+  }
 
   body {
     margin: 0;
@@ -24,75 +41,200 @@
     color: var(--ink);
     font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
     line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
   }
 
-  main {
-    max-width: 640px;
+  header.app-header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--line);
+  }
+
+  .app-header-inner {
+    max-width: 760px;
     margin: 0 auto;
-    padding: 3rem 1.5rem 4rem;
+    padding: 1.5rem 1.5rem 1.35rem;
   }
 
-  h1 {
-    font-size: 1.5rem;
-    font-weight: 600;
-    margin: 0 0 0.25rem;
+  .app-title {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 1.3rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    margin: 0 0 0.4rem;
+  }
+
+  .app-title .mark {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: 6px;
+    background: var(--accent);
+    color: var(--accent-ink);
+    font-size: 0.85rem;
+    font-weight: 700;
+    flex-shrink: 0;
   }
 
   p.lede {
     color: var(--muted);
-    margin: 0 0 2rem;
-    max-width: 46ch;
+    margin: 0;
+    max-width: 58ch;
+    font-size: 0.95rem;
+  }
+
+  main {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem 4rem;
   }
 
   .panel {
     border: 1px solid var(--line);
-    border-radius: 6px;
+    border-radius: var(--radius);
     padding: 1.5rem;
-    background: white;
+    background: var(--surface);
+    box-shadow: var(--shadow-sm);
   }
 
   .panel + .panel {
     margin-top: 1.5rem;
   }
 
-  label {
-    display: block;
+  .panel-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin: 0 0 1rem;
+  }
+
+  /* Dropzone */
+  .dropzone {
+    position: relative;
+    border: 2px dashed var(--line-strong);
+    border-radius: var(--radius);
+    padding: 2rem 1.25rem;
+    text-align: center;
+    background: var(--paper);
+    transition: border-color 0.15s ease, background-color 0.15s ease;
+  }
+
+  .dropzone.dragging {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+  }
+
+  .dropzone.has-file {
+    border-style: solid;
+    border-color: var(--line-strong);
+  }
+
+  .visually-hidden-input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .visually-hidden-input:focus-visible + .dropzone-label {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 3px;
+    border-radius: calc(var(--radius) - 2px);
+  }
+
+  .dropzone-label {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+  }
+
+  .dropzone-icon {
+    width: 2rem;
+    height: 2rem;
+    color: var(--muted);
+  }
+
+  .dropzone-title {
     font-weight: 600;
-    font-size: 0.9rem;
-    margin-bottom: 0.5rem;
+    font-size: 0.95rem;
   }
 
-  input[type="file"] {
-    display: block;
-    width: 100%;
-    font-size: 0.9rem;
-    margin-bottom: 1rem;
+  .dropzone-title .browse-text {
+    color: var(--accent);
+    text-decoration: underline;
   }
 
-  select {
-    font-size: 0.9rem;
-    padding: 0.4rem 0.6rem;
-    border: 1px solid var(--line);
-    border-radius: 4px;
-    background: white;
-    margin-right: 0.75rem;
+  .dropzone-sub {
+    color: var(--muted);
+    font-size: 0.8rem;
+  }
+
+  .dropzone-filename {
+    margin: 0.85rem 0 0;
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+
+  .dropzone-filename:empty {
+    display: none;
+  }
+
+  .field-hint {
+    margin: 0.75rem 0 0;
+    color: var(--muted);
+    font-size: 0.8rem;
   }
 
   .actions {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
     flex-wrap: wrap;
+    gap: 0.75rem 1rem;
+    margin-top: 1.25rem;
+    padding-top: 1.1rem;
+    border-top: 1px solid var(--line);
+  }
+
+  .format-control {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .inline-field-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--muted);
+  }
+
+  select {
+    font: inherit;
+    font-size: 0.9rem;
+    padding: 0.5rem 0.65rem;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: var(--surface);
+    color: var(--ink);
   }
 
   button {
     font: inherit;
     font-weight: 600;
     font-size: 0.9rem;
-    padding: 0.55rem 1.1rem;
-    border-radius: 4px;
+    padding: 0.6rem 1.15rem;
+    border-radius: 6px;
     border: 1px solid transparent;
     cursor: pointer;
+    transition: filter 0.15s ease, border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease;
   }
 
   button.primary {
@@ -100,142 +242,281 @@
     color: var(--accent-ink);
   }
 
-  button.primary:hover { filter: brightness(1.08); }
+  button.primary:hover:not(:disabled) {
+    background: var(--accent-dark);
+  }
 
   button.secondary {
-    background: white;
-    border-color: var(--line);
+    background: var(--surface);
+    border-color: var(--line-strong);
     color: var(--ink);
   }
 
-  button.secondary:hover { border-color: var(--ink); }
+  button.secondary:hover:not(:disabled) {
+    border-color: var(--ink);
+  }
+
+  button.secondary.emphasis {
+    border-color: var(--accent);
+    color: var(--accent-dark);
+    background: var(--accent-soft);
+  }
 
   button:disabled {
-    opacity: 0.55;
+    opacity: 0.5;
     cursor: not-allowed;
   }
 
-  #status-line {
+  .status-line {
     margin-top: 1rem;
-    font-size: 0.9rem;
+    font-size: 0.875rem;
     color: var(--muted);
-    min-height: 1.2em;
+    min-height: 1.4em;
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
   }
 
-  #status-line.error { color: var(--error); }
+  .status-spinner {
+    display: none;
+    width: 0.85em;
+    height: 0.85em;
+    flex-shrink: 0;
+    border: 2px solid currentColor;
+    border-right-color: transparent;
+    border-radius: 50%;
+  }
+
+  .status-line.busy .status-spinner {
+    display: inline-block;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .status-line.busy .status-spinner {
+      animation: spin 0.7s linear infinite;
+    }
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  .status-line.error {
+    color: var(--error);
+    background: var(--error-soft);
+    border: 1px solid var(--error-line);
+    border-radius: 6px;
+    padding: 0.55rem 0.75rem;
+  }
+
+  .status-icon:empty {
+    display: none;
+  }
 
   #result {
     margin-top: 1.5rem;
   }
 
-  #result:empty { display: none; }
-
-  .badge {
-    display: inline-block;
-    padding: 0.15rem 0.55rem;
-    border-radius: 999px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    margin-bottom: 1rem;
+  #result:empty {
+    display: none;
   }
 
-  .badge.ready { background: #e3f1e9; color: var(--accent); }
-  .badge.needs_review { background: #fbeecf; color: #8a5a10; }
-  .badge.blocked { background: #f6e2df; color: var(--error); }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.2rem 0.6rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+  }
+
+  .badge.ready { background: var(--accent-soft); color: var(--accent-dark); }
+  .badge.needs_review { background: var(--warning-soft); color: var(--warning); }
+  .badge.blocked { background: var(--error-soft); color: var(--error); }
+
+  .status-summary {
+    margin: 0 0 1.25rem;
+    color: var(--muted);
+    font-size: 0.85rem;
+  }
+
+  .form-legend {
+    margin: 0 0 1.25rem;
+    font-size: 0.8rem;
+    color: var(--muted);
+  }
+
+  .required-mark {
+    color: var(--error);
+  }
 
   form.invoice-form {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-    margin-top: 1rem;
+    margin-top: 0;
+  }
+
+  fieldset.field-group {
+    border: 0;
+    margin: 0;
+    padding: 0;
+    min-width: 0;
+  }
+
+  fieldset.field-group + fieldset.field-group {
+    margin-top: 1.5rem;
+  }
+
+  fieldset.field-group legend {
+    width: 100%;
+    padding: 0 0 0.5rem;
+    margin-bottom: 0.75rem;
+    border-bottom: 1px solid var(--line);
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--muted);
+  }
+
+  .fieldset-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem 1.25rem;
   }
 
   .field-row label {
+    display: block;
+    font-weight: 600;
     font-size: 0.85rem;
-    margin-bottom: 0.3rem;
+    margin-bottom: 0.35rem;
   }
 
   .field-row input {
     width: 100%;
     font: inherit;
     font-size: 0.9rem;
-    padding: 0.45rem 0.6rem;
+    padding: 0.5rem 0.65rem;
     border: 1px solid var(--line);
-    border-radius: 4px;
-    background: white;
+    border-radius: 6px;
+    background: var(--surface);
     color: var(--ink);
   }
 
-  .field-row input:focus {
+  .field-row input[type="number"] {
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+  }
+
+  .field-row input:focus-visible {
     outline: 2px solid var(--accent);
     outline-offset: 1px;
   }
 
   .field-row.has-error input { border-color: var(--error); }
-  .field-row.has-warning input { border-color: #b5811a; }
+  .field-row.has-warning input { border-color: var(--warning); }
   .field-row.edited input { border-color: var(--edited); }
 
   .field-message {
-    margin: 0.3rem 0 0;
+    margin: 0.35rem 0 0;
     font-size: 0.8rem;
   }
 
   .field-message.issue-error { color: var(--error); }
-  .field-message.issue-warning { color: #8a5a10; }
+  .field-message.issue-warning { color: var(--warning); }
   .field-message.field-message-edited { color: var(--edited); font-style: italic; }
 
   .form-note {
     font-size: 0.8rem;
     color: var(--muted);
-    margin: 1rem 0 0;
-    padding-top: 0.75rem;
+    margin: 1.25rem 0 0;
+    padding-top: 0.85rem;
     border-top: 1px dashed var(--line);
   }
 
-  .field-hint {
-    margin: -0.5rem 0 1rem;
-    color: var(--muted);
-    font-size: 0.8rem;
+  @media (min-width: 640px) {
+    .fieldset-grid {
+      grid-template-columns: 1fr 1fr;
+    }
   }
 
+  @media (max-width: 480px) {
+    .app-header-inner { padding: 1.25rem 1rem 1.1rem; }
+    main { padding: 1.5rem 1rem 3rem; }
+    .panel { padding: 1.15rem; }
+    .actions { flex-direction: column; align-items: stretch; }
+    .actions > button,
+    .actions > .format-control { width: 100%; }
+    .format-control select { flex: 1; }
+  }
 </style>
 </head>
 <body>
-<main>
-  <h1>Invoice Extractor</h1>
-  <p class="lede">
-    Upload a PDF invoice to extract its fields into an editable form, or
-    export it straight to a spreadsheet.
-  </p>
+<header class="app-header">
+  <div class="app-header-inner">
+    <p class="app-title"><span class="mark" aria-hidden="true">IE</span> Invoice Extractor</p>
+    <p class="lede">
+      Extracts structured invoice fields for human review, correction, and
+      CSV or Excel export.
+    </p>
+  </div>
+</header>
 
+<main>
   <div class="panel">
-    <label for="file-input">Invoice PDF</label>
-    <input type="file" id="file-input" accept="application/pdf" />
+    <p class="panel-title">Invoice PDF</p>
+
+    <div class="dropzone" id="dropzone">
+      <input type="file" id="file-input" accept="application/pdf" class="visually-hidden-input" />
+      <label for="file-input" class="dropzone-label">
+        <svg class="dropzone-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M12 3v12" />
+          <path d="M7 8l5-5 5 5" />
+          <path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" />
+        </svg>
+        <span class="dropzone-title"><span class="browse-text">Click to upload</span> or drag and drop</span>
+        <span class="dropzone-sub">PDF only, up to 10 MB</span>
+      </label>
+      <p class="dropzone-filename" id="selected-filename" aria-live="polite"></p>
+    </div>
+
     <p class="field-hint">
       Text-based PDFs only (max 10 MB). Uploaded invoices are processed
       transiently and are not permanently stored by the application.
     </p>
+
     <div class="actions">
       <button type="button" class="primary" id="preview-btn">Extract</button>
-      <select id="format-select" aria-label="Export format">
-        <option value="csv">CSV</option>
-        <option value="xlsx">Excel</option>
-      </select>
+      <div class="format-control">
+        <label for="format-select" class="inline-field-label">Format</label>
+        <select id="format-select">
+          <option value="csv">CSV</option>
+          <option value="xlsx">Excel</option>
+        </select>
+      </div>
       <button type="button" class="secondary" id="export-btn" disabled>Download</button>
     </div>
 
-    <div id="status-line" aria-live="polite"></div>
+    <div id="status-line" class="status-line" aria-live="polite" role="status">
+      <span class="status-spinner" aria-hidden="true"></span>
+      <span class="status-icon" aria-hidden="true"></span>
+      <span class="status-text"></span>
+    </div>
   </div>
 
   <div id="result"></div>
 </main>
 
 <script>
+  const dropzone = document.getElementById("dropzone");
   const fileInput = document.getElementById("file-input");
+  const selectedFilename = document.getElementById("selected-filename");
   const previewBtn = document.getElementById("preview-btn");
   const exportBtn = document.getElementById("export-btn");
   const formatSelect = document.getElementById("format-select");
   const statusLine = document.getElementById("status-line");
+  const statusIcon = statusLine.querySelector(".status-icon");
+  const statusText = statusLine.querySelector(".status-text");
   const resultEl = document.getElementById("result");
 
   // Set once a preview has succeeded, cleared whenever the file changes.
@@ -245,17 +526,60 @@
   // different file the person picked afterward.
   let currentFilenameStem = null;
 
-  exportBtn.disabled = true;
+  function updateExportAvailability(busy) {
+    const available = !busy && Boolean(currentFilenameStem);
+    exportBtn.disabled = !available;
+    exportBtn.classList.toggle("emphasis", available);
+  }
+
+  updateExportAvailability(false);
 
   fileInput.addEventListener("change", () => {
     currentFilenameStem = null;
-    exportBtn.disabled = true;
+    updateExportAvailability(false);
     resultEl.replaceChildren();
     setStatus("");
+
+    const file = fileInput.files[0];
+    selectedFilename.textContent = file ? file.name : "";
+    dropzone.classList.toggle("has-file", Boolean(file));
   });
 
+  ["dragenter", "dragover"].forEach((eventName) => {
+    dropzone.addEventListener(eventName, (event) => {
+      event.preventDefault();
+      dropzone.classList.add("dragging");
+    });
+  });
+
+  ["dragleave", "dragend"].forEach((eventName) => {
+    dropzone.addEventListener(eventName, (event) => {
+      if (eventName === "dragleave" && dropzone.contains(event.relatedTarget)) return;
+      dropzone.classList.remove("dragging");
+    });
+  });
+
+  dropzone.addEventListener("drop", (event) => {
+    event.preventDefault();
+    dropzone.classList.remove("dragging");
+
+    const file = event.dataTransfer?.files?.[0];
+    if (!file) return;
+
+    const transfer = new DataTransfer();
+    transfer.items.add(file);
+    fileInput.files = transfer.files;
+    fileInput.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+
+  // Without this, dropping a file anywhere outside the dropzone would make
+  // the browser navigate to/open it instead of doing nothing.
+  window.addEventListener("dragover", (event) => event.preventDefault());
+  window.addEventListener("drop", (event) => event.preventDefault());
+
   function setStatus(message, isError) {
-    statusLine.textContent = message || "";
+    statusText.textContent = message || "";
+    statusIcon.textContent = isError ? "⚠" : "";
     statusLine.classList.toggle("error", Boolean(isError));
   }
 
@@ -296,7 +620,8 @@
 
   function setBusy(busy) {
     previewBtn.disabled = busy;
-    exportBtn.disabled = busy || !currentFilenameStem;
+    updateExportAvailability(busy);
+    statusLine.classList.toggle("busy", busy);
   }
 
   const STATUS_LABELS = {
@@ -304,6 +629,12 @@
       needs_review: "Review recommended",
       blocked: "Correction required"
     };
+
+  const STATUS_ICONS = {
+    ready: "✓",
+    needs_review: "!",
+    blocked: "✕",
+  };
 
   // One entry per InvoiceData field. `type` picks the HTML input type;
   // date fields already arrive as "YYYY-MM-DD" from the backend, which is
@@ -321,6 +652,129 @@
     ["customer_ICE", "Customer ICE", "text"],
   ];
 
+  // Purely a rendering grouping -- the data model, field keys, and
+  // INVOICE_FIELDS above (used for export + error-label lookups) are
+  // unaffected by how the fields are visually organized.
+  const FIELD_GROUPS = [
+    { title: "Invoice", fields: ["invoice_number", "invoice_date"] },
+    { title: "Supplier", fields: ["supplier_name", "supplier_tax_id"] },
+    { title: "Customer", fields: ["customer_name", "customer_ICE"] },
+    { title: "Amounts", fields: ["total_amount", "subtotal", "tax_amount", "currency"] },
+  ];
+
+  // Required per InvoiceData (app/models.py); shown as a visual hint only --
+  // no native `required` attribute is set, so client-side validation
+  // semantics are unchanged. The server remains the source of truth.
+  const REQUIRED_FIELDS = new Set([
+    "invoice_number",
+    "invoice_date",
+    "supplier_name",
+    "total_amount",
+    "currency",
+  ]);
+
+  const FIELD_META = new Map(
+    INVOICE_FIELDS.map(([key, label, type]) => [key, { label, type }])
+  );
+
+  function renderField(key, issues, data) {
+    const { label, type: inputType } = FIELD_META.get(key);
+    const fieldIssues = issues.filter((issue) => issue.field === key);
+    const hasError = fieldIssues.some((issue) => issue.severity === "error");
+    const hasWarning = fieldIssues.some((issue) => issue.severity === "warning");
+
+    const row = document.createElement("div");
+    row.className = "field-row";
+    if (hasError) row.classList.add("has-error");
+    else if (hasWarning) row.classList.add("has-warning");
+
+    const fieldId = `field-${key}`;
+
+    const labelEl = document.createElement("label");
+    labelEl.setAttribute("for", fieldId);
+    labelEl.textContent = label;
+    if (REQUIRED_FIELDS.has(key)) {
+      const mark = document.createElement("span");
+      mark.className = "required-mark";
+      mark.setAttribute("aria-hidden", "true");
+      mark.textContent = " *";
+      labelEl.appendChild(mark);
+    }
+    row.appendChild(labelEl);
+
+    const input = document.createElement("input");
+    input.type = inputType;
+    input.id = fieldId;
+    input.name = key;
+    if (hasError) {
+      input.setAttribute("aria-invalid", "true");
+    }
+
+    // Every field shows, even ones that came back empty -- that's the
+    // point of an editable form: filling in exactly what's missing.
+    const value = data[key];
+    input.value = value === null || value === undefined ? "" : value;
+    if (inputType === "number") input.step = "0.01";
+    row.appendChild(input);
+
+    const issueIds = [];
+
+    for (const [index, issue] of fieldIssues.entries()) {
+      const issueId = `${fieldId}-issue-${index}`;
+      issueIds.push(issueId);
+
+      const message = document.createElement("p");
+      message.id = issueId;
+      message.className = `field-message ${issue.severity === "error" ? "issue-error" : "issue-warning"}`;
+      message.textContent = `${issue.severity === "error" ? "✕" : "⚠"} ${issue.message}`;
+      row.appendChild(message);
+    }
+
+    if (issueIds.length) {
+      input.setAttribute("aria-describedby", issueIds.join(" "));
+    }
+
+    // If this field had an extraction issue, clear the stale
+    // error/warning as soon as the person changes it -- showing
+    // "must contain 15 digits" after they've already fixed it is
+    // actively misleading. This does NOT re-validate anything; it
+    // just stops displaying a judgment about a value that no longer
+    // exists. The real check (InvoiceData's own rules, server-side)
+    // still runs on Download and is what actually decides correctness.
+    if (hasError || hasWarning) {
+      input.addEventListener(
+        "input",
+        () => {
+          row.classList.remove("has-error", "has-warning");
+          input.removeAttribute("aria-invalid");
+          input.removeAttribute("aria-describedby");
+          row.querySelectorAll(".field-message").forEach((el) => el.remove());
+          row.classList.add("edited");
+          const note = document.createElement("p");
+          note.className = "field-message field-message-edited";
+          note.textContent = "✎ Edited - validated when you download.";
+          row.appendChild(note);
+        },
+        { once: true }
+      );
+    }
+
+    return row;
+  }
+
+  function statusSummary(status, issues) {
+    const errorCount = issues.filter((issue) => issue.severity === "error").length;
+    const warningCount = issues.filter((issue) => issue.severity === "warning").length;
+
+    if (status === "blocked") {
+      return `${errorCount} field${errorCount === 1 ? "" : "s"} must be corrected before export.`;
+    }
+    if (status === "needs_review") {
+      return `${warningCount} field${warningCount === 1 ? "" : "s"} may need a quick check before export.`;
+    }
+    return "No issues were found during extraction.";
+  }
+
   function renderResult(payload) {
     const data = payload.data || {};
     const issues = payload.issues || [];
@@ -332,89 +786,46 @@
 
     const badge = document.createElement("span");
     badge.className = `badge ${payload.status}`;
-    badge.textContent =
-      STATUS_LABELS[payload.status] || payload.status.replace("_", " ");
+    const icon = STATUS_ICONS[payload.status] || "";
+    const label = STATUS_LABELS[payload.status] || payload.status.replace("_", " ");
+    badge.textContent = icon ? `${icon} ${label}` : label;
     panel.appendChild(badge);
+
+    const summary = document.createElement("p");
+    summary.className = "status-summary";
+    summary.textContent = statusSummary(payload.status, issues);
+    panel.appendChild(summary);
+
+    const legend = document.createElement("p");
+    legend.className = "form-legend";
+    const legendMark = document.createElement("span");
+    legendMark.className = "required-mark";
+    legendMark.setAttribute("aria-hidden", "true");
+    legendMark.textContent = "*";
+    legend.appendChild(legendMark);
+    legend.appendChild(document.createTextNode(" indicates a field required for export."));
+    panel.appendChild(legend);
 
     const form = document.createElement("form");
     form.className = "invoice-form";
     form.noValidate = true;
 
-    for (const [key, label, inputType] of INVOICE_FIELDS) {
-      const fieldIssues = issues.filter((issue) => issue.field === key);
-      const hasError = fieldIssues.some((issue) => issue.severity === "error");
-      const hasWarning = fieldIssues.some((issue) => issue.severity === "warning");
+    for (const group of FIELD_GROUPS) {
+      const fieldset = document.createElement("fieldset");
+      fieldset.className = "field-group";
 
-      const row = document.createElement("div");
-      row.className = "field-row";
-      if (hasError) row.classList.add("has-error");
-      else if (hasWarning) row.classList.add("has-warning");
+      const groupLegend = document.createElement("legend");
+      groupLegend.textContent = group.title;
+      fieldset.appendChild(groupLegend);
 
-      const fieldId = `field-${key}`;
-
-      const labelEl = document.createElement("label");
-      labelEl.setAttribute("for", fieldId);
-      labelEl.textContent = label;
-      row.appendChild(labelEl);
-
-      const input = document.createElement("input");
-      input.type = inputType;
-      input.id = fieldId;
-      input.name = key;
-      if (hasError) {
-        input.setAttribute("aria-invalid", "true");
+      const grid = document.createElement("div");
+      grid.className = "fieldset-grid";
+      for (const key of group.fields) {
+        grid.appendChild(renderField(key, issues, data));
       }
+      fieldset.appendChild(grid);
 
-      // Every field shows, even ones that came back empty -- that's the
-      // point of an editable form: filling in exactly what's missing.
-      const value = data[key];
-      input.value = value === null || value === undefined ? "" : value;
-      if (inputType === "number") input.step = "0.01";
-      row.appendChild(input);
-
-      const issueIds = [];
-
-      for (const [index, issue] of fieldIssues.entries()) {
-        const issueId = `${fieldId}-issue-${index}`;
-        issueIds.push(issueId);
-
-        const message = document.createElement("p");
-        message.id = issueId;
-        message.className = `field-message ${issue.severity === "error" ? "issue-error" : "issue-warning"}`;
-        message.textContent = issue.message;
-        row.appendChild(message);
-      }
-
-      if (issueIds.length) {
-        input.setAttribute("aria-describedby", issueIds.join(" "));
-      }
-
-      // If this field had an extraction issue, clear the stale
-      // error/warning as soon as the person changes it -- showing
-      // "must contain 15 digits" after they've already fixed it is
-      // actively misleading. This does NOT re-validate anything; it
-      // just stops displaying a judgment about a value that no longer
-      // exists. The real check (InvoiceData's own rules, server-side)
-      // still runs on Download and is what actually decides correctness.
-      if (hasError || hasWarning) {
-        input.addEventListener(
-          "input",
-          () => {
-            row.classList.remove("has-error", "has-warning");
-            input.removeAttribute("aria-invalid");
-            input.removeAttribute("aria-describedby");
-            row.querySelectorAll(".field-message").forEach((el) => el.remove());
-            row.classList.add("edited");
-            const note = document.createElement("p");
-            note.className = "field-message field-message-edited";
-            note.textContent = "Edited - validated when you download.";
-            row.appendChild(note);
-          },
-          { once: true }
-        );
-      }
-
-      form.appendChild(row);
+      form.appendChild(fieldset);
     }
 
     panel.appendChild(form);
@@ -452,7 +863,6 @@
     setStatus("Reading invoice…");
     resultEl.replaceChildren();
     currentFilenameStem = null;
-    exportBtn.disabled = true;
 
     const body = new FormData();
     body.append("file", file);
