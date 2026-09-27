@@ -55,6 +55,19 @@
     padding: 1.5rem 1.5rem 1.35rem;
   }
 
+  .app-header-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem 1.5rem;
+    flex-wrap: wrap;
+  }
+
+  .app-header-text {
+    min-width: 0;
+    flex: 1 1 220px;
+  }
+
   .app-title {
     display: flex;
     align-items: center;
@@ -84,6 +97,42 @@
     margin: 0;
     max-width: 58ch;
     font-size: 1rem;
+  }
+
+  .lang-switch {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    flex-shrink: 0;
+    margin-top: 0.2rem;
+  }
+
+  .lang-btn {
+    height: 1.9rem;
+    padding: 0 0.65rem;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    border: 1px solid var(--line-strong);
+    border-radius: 6px;
+    background: var(--surface);
+    color: var(--muted);
+  }
+
+  .lang-btn:hover {
+    border-color: var(--ink);
+    color: var(--ink);
+  }
+
+  .lang-btn[aria-pressed="true"] {
+    background: var(--accent-soft);
+    border-color: var(--accent);
+    color: var(--accent-dark);
+  }
+
+  .lang-sep {
+    color: var(--line-strong);
+    font-size: 0.8rem;
   }
 
   main {
@@ -459,17 +508,29 @@
 <body>
 <header class="app-header">
   <div class="app-header-inner">
-    <p class="app-title"><span class="mark" aria-hidden="true">IE</span> Invoice Extractor</p>
-    <p class="lede">
-      Extracts structured invoice fields for human review, correction, and
-      CSV or Excel export.
-    </p>
+    <div class="app-header-row">
+      <div class="app-header-text">
+        <p class="app-title">
+          <span class="mark" aria-hidden="true" data-i18n="app.mark">IE</span>
+          <span data-i18n="app.name">Invoice Extractor</span>
+        </p>
+        <p class="lede" data-i18n="app.tagline">
+          Extracts structured invoice fields for human review, correction, and
+          CSV or Excel export.
+        </p>
+      </div>
+      <div class="lang-switch" role="group" data-i18n-aria-label="lang.switchLabel" aria-label="Language">
+        <button type="button" class="lang-btn" id="lang-btn-fr" aria-pressed="false">FR</button>
+        <span class="lang-sep" aria-hidden="true">|</span>
+        <button type="button" class="lang-btn" id="lang-btn-en" aria-pressed="false">EN</button>
+      </div>
+    </div>
   </div>
 </header>
 
 <main>
   <div class="panel">
-    <p class="panel-title">Upload an invoice</p>
+    <p class="panel-title" data-i18n="upload.heading">Upload an invoice</p>
 
     <div class="dropzone" id="dropzone">
       <input type="file" id="file-input" accept="application/pdf" class="visually-hidden-input" />
@@ -479,27 +540,30 @@
           <path d="M7 8l5-5 5 5" />
           <path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" />
         </svg>
-        <span class="dropzone-title"><span class="browse-text">Click to upload</span> or drag and drop</span>
-        <span class="dropzone-sub">PDF only, up to 10 MB</span>
+        <span class="dropzone-title">
+          <span class="browse-text" data-i18n="upload.browse">Click to upload</span>
+          <span data-i18n="upload.drag">or drag and drop</span>
+        </span>
+        <span class="dropzone-sub" data-i18n="upload.constraint">PDF only, up to 10 MB</span>
       </label>
       <p class="dropzone-filename" id="selected-filename" aria-live="polite"></p>
     </div>
 
-    <p class="field-hint">
+    <p class="field-hint" data-i18n="upload.hint">
       Text-based PDFs only (max 10 MB). Uploaded invoices are processed
       transiently and are not permanently stored by the application.
     </p>
 
     <div class="actions">
-      <button type="button" class="primary" id="preview-btn">Extract invoice</button>
+      <button type="button" class="primary" id="preview-btn" data-i18n="actions.extract">Extract invoice</button>
       <div class="format-control">
-        <label for="format-select" class="inline-field-label">Format</label>
+        <label for="format-select" class="inline-field-label" data-i18n="actions.format">Format</label>
         <select id="format-select">
           <option value="csv">CSV</option>
           <option value="xlsx">Excel</option>
         </select>
       </div>
-      <button type="button" class="secondary" id="export-btn" disabled>Download</button>
+      <button type="button" class="secondary" id="export-btn" disabled data-i18n="actions.download">Download</button>
     </div>
 
     <div id="status-line" class="status-line" aria-live="polite" role="status">
@@ -513,6 +577,262 @@
 </main>
 
 <script>
+  // ---------------------------------------------------------------------
+  // Localization (French / English)
+  //
+  // Centralized dictionary + t(path, vars) lookup. Static shell elements
+  // are retranslated via [data-i18n] walking; the dynamically-rendered
+  // #result panel and the status line are retranslated via small render
+  // closures (see registerRetranslate / lastStatusRender below) so that a
+  // language switch never rebuilds the DOM, never touches <input> values,
+  // and never re-runs extraction.
+  // ---------------------------------------------------------------------
+
+  const LANG_STORAGE_KEY = "invoice-extractor-language";
+  const DEFAULT_LANG = "fr";
+  const SUPPORTED_LANGS = ["fr", "en"];
+
+  const translations = {
+    en: {
+      doc: { title: "Invoice Extractor" },
+      app: {
+        mark: "IE",
+        name: "Invoice Extractor",
+        tagline: "Extracts structured invoice fields for human review, correction, and CSV or Excel export.",
+      },
+      lang: { switchLabel: "Language" },
+      upload: {
+        heading: "Upload an invoice",
+        browse: "Click to upload",
+        drag: "or drag and drop",
+        constraint: "PDF only, up to 10 MB",
+        hint: "Text-based PDFs only (max 10 MB). Uploaded invoices are processed transiently and are not permanently stored by the application.",
+      },
+      actions: {
+        extract: "Extract invoice",
+        format: "Format",
+        download: "Download",
+      },
+      status: {
+        chooseFile: "Choose a PDF first.",
+        reading: "Reading invoice…",
+        extractionFailed: "Extraction failed.",
+        networkError: "Could not reach the server. Check your connection and try again.",
+        extractFirst: "Extract an invoice before exporting.",
+        preparing: "Preparing download…",
+        exportFailed: "Export failed.",
+        downloaded: (v) => `Downloaded ${v.filename}.`,
+        ready: "Ready to export",
+        needsReview: "Review recommended",
+        blocked: "Correction required",
+        noIssues: "No issues were found during extraction.",
+        blockedSummary: (v) => `${v.count} field${v.count === 1 ? "" : "s"} must be corrected before export.`,
+        reviewSummary: (v) => `${v.count} field${v.count === 1 ? "" : "s"} may need a quick check before export.`,
+      },
+      groups: {
+        invoice: "Invoice",
+        supplier: "Supplier",
+        customer: "Customer",
+        amounts: "Amounts",
+      },
+      fields: {
+        invoice_number: "Invoice number",
+        invoice_date: "Invoice date",
+        total_amount: "Total amount",
+        subtotal: "Subtotal",
+        tax_amount: "Tax amount",
+        currency: "Currency",
+        supplier_name: "Supplier name",
+        supplier_tax_id: "Supplier tax ID",
+        customer_name: "Customer name",
+        customer_ICE: "Customer ICE",
+      },
+      form: {
+        requiredLegend: "indicates a field required for export.",
+        edited: "Edited - validated when you download.",
+        note: "Correct any fields above, then choose a format and download.",
+      },
+    },
+    fr: {
+      doc: { title: "Extracteur de factures" },
+      app: {
+        mark: "EF",
+        name: "Extracteur de factures",
+        tagline: "Extrait les données structurées de vos factures pour vérification, correction et export CSV ou Excel.",
+      },
+      lang: { switchLabel: "Langue" },
+      upload: {
+        heading: "Importer une facture",
+        browse: "Cliquez pour sélectionner",
+        drag: "ou glissez-déposez",
+        constraint: "PDF uniquement, jusqu'à 10 Mo",
+        hint: "PDF contenant du texte uniquement (10 Mo maximum). Les factures importées sont traitées de manière transitoire et ne sont pas stockées de façon permanente par l'application.",
+      },
+      actions: {
+        extract: "Extraire la facture",
+        format: "Format",
+        download: "Télécharger",
+      },
+      status: {
+        chooseFile: "Sélectionnez d'abord un PDF.",
+        reading: "Lecture de la facture…",
+        extractionFailed: "Échec de l'extraction.",
+        networkError: "Impossible de contacter le serveur. Vérifiez votre connexion et réessayez.",
+        extractFirst: "Extrayez une facture avant d'exporter.",
+        preparing: "Préparation du téléchargement…",
+        exportFailed: "Échec de l'export.",
+        downloaded: (v) => `Téléchargé : ${v.filename}.`,
+        ready: "Prêt à exporter",
+        needsReview: "Vérification recommandée",
+        blocked: "Correction requise",
+        noIssues: "Aucun problème détecté lors de l'extraction.",
+        blockedSummary: (v) =>
+          v.count === 1
+            ? "1 champ doit être corrigé avant l'export."
+            : `${v.count} champs doivent être corrigés avant l'export.`,
+        reviewSummary: (v) =>
+          v.count === 1
+            ? "1 champ mérite une vérification rapide avant l'export."
+            : `${v.count} champs méritent une vérification rapide avant l'export.`,
+      },
+      groups: {
+        invoice: "Facture",
+        supplier: "Fournisseur",
+        customer: "Client",
+        amounts: "Montants",
+      },
+      fields: {
+        invoice_number: "N° de facture",
+        invoice_date: "Date de facture",
+        total_amount: "Montant total",
+        subtotal: "Sous-total",
+        tax_amount: "Montant de la TVA",
+        currency: "Devise",
+        supplier_name: "Nom du fournisseur",
+        supplier_tax_id: "Identifiant fiscal du fournisseur",
+        customer_name: "Nom du client",
+        customer_ICE: "ICE du client",
+      },
+      form: {
+        requiredLegend: "indique un champ obligatoire pour l'export.",
+        edited: "Modifié – validé lors du téléchargement.",
+        note: "Corrigez les champs ci-dessus, puis choisissez un format et téléchargez.",
+      },
+    },
+  };
+
+  // The finite set of backend-authored English strings that are ever
+  // displayed verbatim to the user (app/pdf.py, app/main.py, app/review.py).
+  // Matched at the presentation layer only -- the backend API contract,
+  // issue objects, and validation messages are never modified. Anything
+  // that doesn't match a rule here is shown as-is (English) rather than
+  // risk an inaccurate translation of an unexpected backend message.
+  const BACKEND_MESSAGE_RULES = [
+    { match: "Invoice number is missing.", fr: "Le numéro de facture est manquant." },
+    { match: "Invoice date is missing.", fr: "La date de facture est manquante." },
+    { match: "Total amount is missing.", fr: "Le montant total est manquant." },
+    { match: "No currency detected", fr: "Aucune devise détectée." },
+    { match: "Customer ICE must contain 15 digits.", fr: "L'ICE du client doit contenir 15 chiffres." },
+    {
+      match: "Subtotal + tax amount does not equal total amount.",
+      fr: "Le sous-total plus la TVA ne correspond pas au montant total.",
+    },
+    { match: "Supplier name is missing.", fr: "Le nom du fournisseur est manquant." },
+    {
+      match: "Invalid file type. Only PDF files are allowed.",
+      fr: "Type de fichier invalide. Seuls les fichiers PDF sont autorisés.",
+    },
+    {
+      match: "Password-protected or encrypted PDFs are not supported.",
+      fr: "Les PDF protégés par mot de passe ou chiffrés ne sont pas pris en charge.",
+    },
+    {
+      match: "Corrupted or invalid PDF file structure.",
+      fr: "Structure de fichier PDF corrompue ou invalide.",
+    },
+    {
+      match: "No extractable text found. Scanned PDFs are not supported in this version.",
+      fr: "Aucun texte extractible trouvé. Les PDF scannés ne sont pas pris en charge dans cette version.",
+    },
+    { match: "Failed to generate export file", fr: "Échec de la génération du fichier d'export." },
+    {
+      match: "Corrected invoice failed validation.",
+      fr: "La facture corrigée n'a pas passé la validation.",
+    },
+    {
+      regex: /^Multiple currencies detected: (.+)\.$/,
+      fr: (m) => `Plusieurs devises détectées : ${m[1]}.`,
+    },
+    {
+      regex: /^Multiple customer (.+) values detected: (.+)\.$/,
+      fr: (m) => `Plusieurs valeurs de ${m[1]} client détectées : ${m[2]}.`,
+    },
+    {
+      regex: /^Multiple supplier (.+) values detected: (.+)\.$/,
+      fr: (m) => `Plusieurs valeurs de ${m[1]} fournisseur détectées : ${m[2]}.`,
+    },
+    {
+      regex: /^PDF exceeds the ([\d.]+) MB limit\.$/,
+      fr: (m) => `Le PDF dépasse la limite de ${m[1]} Mo.`,
+    },
+  ];
+
+  function translateBackendMessage(message) {
+    if (currentLang !== "fr" || typeof message !== "string") return message;
+    for (const rule of BACKEND_MESSAGE_RULES) {
+      if (rule.match !== undefined && message === rule.match) return rule.fr;
+      if (rule.regex) {
+        const found = message.match(rule.regex);
+        if (found) return rule.fr(found);
+      }
+    }
+    // Unknown/unexpected backend text (e.g. a raw Pydantic validation
+    // message): shown as-is rather than guessed at.
+    return message;
+  }
+
+  function loadStoredLang() {
+    try {
+      const stored = localStorage.getItem(LANG_STORAGE_KEY);
+      return SUPPORTED_LANGS.includes(stored) ? stored : DEFAULT_LANG;
+    } catch (err) {
+      return DEFAULT_LANG;
+    }
+  }
+
+  function persistLang(lang) {
+    try {
+      localStorage.setItem(LANG_STORAGE_KEY, lang);
+    } catch (err) {
+      // localStorage may be unavailable (private browsing, disabled
+      // storage). The chosen language still applies for this session --
+      // it just won't be remembered next visit.
+    }
+  }
+
+  let currentLang = loadStoredLang();
+
+  function t(path, vars) {
+    const dict = translations[currentLang] || translations[DEFAULT_LANG];
+    const fallbackDict = translations[DEFAULT_LANG];
+    const resolve = (dictionary) =>
+      path.split(".").reduce((acc, part) => (acc == null ? acc : acc[part]), dictionary);
+    const value = resolve(dict);
+    const resolved = value !== undefined ? value : resolve(fallbackDict);
+    return typeof resolved === "function" ? resolved(vars) : resolved;
+  }
+
+  function applyStaticTranslations() {
+    document.querySelectorAll("[data-i18n]").forEach((el) => {
+      el.textContent = t(el.dataset.i18n);
+    });
+    document.querySelectorAll("[data-i18n-aria-label]").forEach((el) => {
+      el.setAttribute("aria-label", t(el.dataset.i18nAriaLabel));
+    });
+    document.title = t("doc.title");
+    document.documentElement.lang = currentLang;
+  }
+
   const dropzone = document.getElementById("dropzone");
   const fileInput = document.getElementById("file-input");
   const selectedFilename = document.getElementById("selected-filename");
@@ -523,6 +843,10 @@
   const statusIcon = statusLine.querySelector(".status-icon");
   const statusText = statusLine.querySelector(".status-text");
   const resultEl = document.getElementById("result");
+  const langButtons = {
+    fr: document.getElementById("lang-btn-fr"),
+    en: document.getElementById("lang-btn-en"),
+  };
 
   // Set once a preview has succeeded, cleared whenever the file changes.
   // Export reads from this rather than "whatever file happens to be
@@ -543,6 +867,7 @@
     currentFilenameStem = null;
     updateExportAvailability(false);
     resultEl.replaceChildren();
+    resultRetranslators = [];
     setStatus("");
 
     const file = fileInput.files[0];
@@ -582,19 +907,33 @@
   window.addEventListener("dragover", (event) => event.preventDefault());
   window.addEventListener("drop", (event) => event.preventDefault());
 
-  function setStatus(message, isError) {
+  // The status line remembers *how to render itself* (a closure over the
+  // data needed, not a pre-translated string) so that switching language
+  // can redraw the current message -- success, error, or busy text --
+  // without re-running the request that produced it.
+  let lastStatusRender = () => "";
+  let lastStatusIsError = false;
+
+  function applyStatusRender() {
+    const message = lastStatusRender();
     statusText.textContent = message || "";
-    statusIcon.textContent = isError ? "⚠" : "";
-    statusLine.classList.toggle("error", Boolean(isError));
+    statusIcon.textContent = message && lastStatusIsError ? "⚠" : "";
+    statusLine.classList.toggle("error", Boolean(message && lastStatusIsError));
   }
 
-  function getErrorMessage(payload, fallback) {
+  function setStatus(renderFn, isError) {
+    lastStatusRender = typeof renderFn === "function" ? renderFn : () => renderFn || "";
+    lastStatusIsError = Boolean(isError);
+    applyStatusRender();
+  }
+
+  function getErrorMessage(payload, fallbackKey) {
     if (payload && typeof payload.detail === "string") {
-      return payload.detail;
+      return translateBackendMessage(payload.detail);
     }
 
     if (payload?.detail && typeof payload.detail.message === "string") {
-      return payload.detail.message;
+      return translateBackendMessage(payload.detail.message);
     }
 
     if (Array.isArray(payload?.detail)) {
@@ -602,22 +941,22 @@
         .map((error) => {
           const field = error.loc?.at(-1);
           const match = INVOICE_FIELDS.find(([key]) => key === field);
-          const label = match ? match.at(1) : field;
+          const label = match ? t(`fields.${field}`) : field;
 
           return `${field ? `${label}: ` : ""}${error.msg}`;
         })
         .join(" ");
 
-      return messages || fallback;
+      return messages || t(fallbackKey);
     }
 
-    return fallback;
+    return t(fallbackKey);
   }
 
   function requireFile() {
     const file = fileInput.files[0];
     if (!file) {
-      setStatus("Choose a PDF first.", true);
+      setStatus(() => t("status.chooseFile"), true);
       return null;
     }
     return file;
@@ -629,42 +968,43 @@
     statusLine.classList.toggle("busy", busy);
   }
 
-  const STATUS_LABELS = {
-      ready: "Ready to export",
-      needs_review: "Review recommended",
-      blocked: "Correction required"
-    };
-
   const STATUS_ICONS = {
     ready: "✓",
     needs_review: "!",
     blocked: "✕",
   };
 
+  const STATUS_KEYS = {
+    ready: "status.ready",
+    needs_review: "status.needsReview",
+    blocked: "status.blocked",
+  };
+
   // One entry per InvoiceData field. `type` picks the HTML input type;
   // date fields already arrive as "YYYY-MM-DD" from the backend, which is
-  // exactly the format <input type="date"> expects.
+  // exactly the format <input type="date"> expects. Labels are looked up
+  // through t(`fields.${key}`) at render/retranslate time, not stored here.
   const INVOICE_FIELDS = [
-    ["invoice_number", "Invoice number", "text"],
-    ["invoice_date", "Invoice date", "date"],
-    ["total_amount", "Total amount", "number"],
-    ["subtotal", "Subtotal", "number"],
-    ["tax_amount", "Tax amount", "number"],
-    ["currency", "Currency", "text"],
-    ["supplier_name", "Supplier name", "text"],
-    ["supplier_tax_id", "Supplier tax ID", "text"],
-    ["customer_name", "Customer name", "text"],
-    ["customer_ICE", "Customer ICE", "text"],
+    ["invoice_number", "text"],
+    ["invoice_date", "date"],
+    ["total_amount", "number"],
+    ["subtotal", "number"],
+    ["tax_amount", "number"],
+    ["currency", "text"],
+    ["supplier_name", "text"],
+    ["supplier_tax_id", "text"],
+    ["customer_name", "text"],
+    ["customer_ICE", "text"],
   ];
 
   // Purely a rendering grouping -- the data model, field keys, and
   // INVOICE_FIELDS above (used for export + error-label lookups) are
   // unaffected by how the fields are visually organized.
   const FIELD_GROUPS = [
-    { title: "Invoice", fields: ["invoice_number", "invoice_date"] },
-    { title: "Supplier", fields: ["supplier_name", "supplier_tax_id"] },
-    { title: "Customer", fields: ["customer_name", "customer_ICE"] },
-    { title: "Amounts", fields: ["total_amount", "subtotal", "tax_amount", "currency"] },
+    { key: "invoice", fields: ["invoice_number", "invoice_date"] },
+    { key: "supplier", fields: ["supplier_name", "supplier_tax_id"] },
+    { key: "customer", fields: ["customer_name", "customer_ICE"] },
+    { key: "amounts", fields: ["total_amount", "subtotal", "tax_amount", "currency"] },
   ];
 
   // Required per InvoiceData (app/models.py); shown as a visual hint only --
@@ -678,12 +1018,27 @@
     "currency",
   ]);
 
-  const FIELD_META = new Map(
-    INVOICE_FIELDS.map(([key, label, type]) => [key, { label, type }])
-  );
+  const FIELD_META = new Map(INVOICE_FIELDS.map(([key, type]) => [key, { type }]));
+
+  // Retranslators for the dynamically-rendered #result panel: each entry
+  // is a {el, render} pair applied on language switch. This -- not a
+  // re-render -- is what makes localization state-safe: <input> elements
+  // and their current values/classes are never touched here.
+  let resultRetranslators = [];
+
+  function registerRetranslate(el, render) {
+    resultRetranslators.push({ el, render });
+    el.textContent = render();
+  }
+
+  function retranslateResult() {
+    resultRetranslators.forEach(({ el, render }) => {
+      el.textContent = render();
+    });
+  }
 
   function renderField(key, issues, data) {
-    const { label, type: inputType } = FIELD_META.get(key);
+    const { type: inputType } = FIELD_META.get(key);
     const fieldIssues = issues.filter((issue) => issue.field === key);
     const hasError = fieldIssues.some((issue) => issue.severity === "error");
     const hasWarning = fieldIssues.some((issue) => issue.severity === "warning");
@@ -697,7 +1052,9 @@
 
     const labelEl = document.createElement("label");
     labelEl.setAttribute("for", fieldId);
-    labelEl.textContent = label;
+    const labelText = document.createElement("span");
+    labelEl.appendChild(labelText);
+    registerRetranslate(labelText, () => t(`fields.${key}`));
     if (REQUIRED_FIELDS.has(key)) {
       const mark = document.createElement("span");
       mark.className = "required-mark";
@@ -731,7 +1088,8 @@
       const message = document.createElement("p");
       message.id = issueId;
       message.className = `field-message ${issue.severity === "error" ? "issue-error" : "issue-warning"}`;
-      message.textContent = `${issue.severity === "error" ? "✕" : "⚠"} ${issue.message}`;
+      const icon = issue.severity === "error" ? "✕" : "⚠";
+      registerRetranslate(message, () => `${icon} ${translateBackendMessage(issue.message)}`);
       row.appendChild(message);
     }
 
@@ -757,7 +1115,7 @@
           row.classList.add("edited");
           const note = document.createElement("p");
           note.className = "field-message field-message-edited";
-          note.textContent = "✎ Edited - validated when you download.";
+          registerRetranslate(note, () => `✎ ${t("form.edited")}`);
           row.appendChild(note);
         },
         { once: true }
@@ -772,33 +1130,37 @@
     const warningCount = issues.filter((issue) => issue.severity === "warning").length;
 
     if (status === "blocked") {
-      return `${errorCount} field${errorCount === 1 ? "" : "s"} must be corrected before export.`;
+      return t("status.blockedSummary", { count: errorCount });
     }
     if (status === "needs_review") {
-      return `${warningCount} field${warningCount === 1 ? "" : "s"} may need a quick check before export.`;
+      return t("status.reviewSummary", { count: warningCount });
     }
-    return "No issues were found during extraction.";
+    return t("status.noIssues");
   }
 
   function renderResult(payload) {
     const data = payload.data || {};
     const issues = payload.issues || [];
+    const status = payload.status;
 
     resultEl.replaceChildren();
+    resultRetranslators = [];
 
     const panel = document.createElement("div");
     panel.className = "panel";
 
     const badge = document.createElement("span");
-    badge.className = `badge ${payload.status}`;
-    const icon = STATUS_ICONS[payload.status] || "";
-    const label = STATUS_LABELS[payload.status] || payload.status.replace("_", " ");
-    badge.textContent = icon ? `${icon} ${label}` : label;
+    badge.className = `badge ${status}`;
+    const icon = STATUS_ICONS[status] || "";
+    registerRetranslate(badge, () => {
+      const label = STATUS_KEYS[status] ? t(STATUS_KEYS[status]) : status.replace("_", " ");
+      return icon ? `${icon} ${label}` : label;
+    });
     panel.appendChild(badge);
 
     const summary = document.createElement("p");
     summary.className = "status-summary";
-    summary.textContent = statusSummary(payload.status, issues);
+    registerRetranslate(summary, () => statusSummary(status, issues));
     panel.appendChild(summary);
 
     const legend = document.createElement("p");
@@ -808,7 +1170,9 @@
     legendMark.setAttribute("aria-hidden", "true");
     legendMark.textContent = "*";
     legend.appendChild(legendMark);
-    legend.appendChild(document.createTextNode(" indicates a field required for export."));
+    const legendText = document.createElement("span");
+    legend.appendChild(legendText);
+    registerRetranslate(legendText, () => ` ${t("form.requiredLegend")}`);
     panel.appendChild(legend);
 
     const form = document.createElement("form");
@@ -820,7 +1184,7 @@
       fieldset.className = "field-group";
 
       const groupLegend = document.createElement("legend");
-      groupLegend.textContent = group.title;
+      registerRetranslate(groupLegend, () => t(`groups.${group.key}`));
       fieldset.appendChild(groupLegend);
 
       const grid = document.createElement("div");
@@ -837,7 +1201,7 @@
 
     const note = document.createElement("p");
     note.className = "form-note";
-    note.textContent = "Correct any fields above, then choose a format and download.";
+    registerRetranslate(note, () => t("form.note"));
     panel.appendChild(note);
 
     resultEl.appendChild(panel);
@@ -865,8 +1229,9 @@
     if (!file) return;
 
     setBusy(true);
-    setStatus("Reading invoice…");
+    setStatus(() => t("status.reading"));
     resultEl.replaceChildren();
+    resultRetranslators = [];
     currentFilenameStem = null;
 
     const body = new FormData();
@@ -877,7 +1242,7 @@
       const payload = await response.json();
 
       if (!response.ok) {
-        setStatus(getErrorMessage(payload, "Extraction failed."), true);
+        setStatus(() => getErrorMessage(payload, "status.extractionFailed"), true);
         return;
       }
 
@@ -887,7 +1252,7 @@
       // Strip whatever extension the upload had -- "my_invoice.pdf" -> "my_invoice".
       currentFilenameStem = file.name.replace(/\.[^./]+$/, "") || "invoice";
     } catch (err) {
-      setStatus("Could not reach the server. Check your connection and try again.", true);
+      setStatus(() => t("status.networkError"), true);
     } finally {
       setBusy(false);
     }
@@ -895,12 +1260,12 @@
 
   exportBtn.addEventListener("click", async () => {
     if (!currentFilenameStem) {
-      setStatus("Extract an invoice before exporting.", true);
+      setStatus(() => t("status.extractFirst"), true);
       return;
     }
 
     setBusy(true);
-    setStatus("Preparing download…");
+    setStatus(() => t("status.preparing"));
 
     const format = formatSelect.value;
     const invoiceData = collectInvoiceFormData();
@@ -917,12 +1282,15 @@
 
       if (!response.ok) {
         const payload = await response.json().catch(() => ({}));
-        const detail = getErrorMessage(payload, "Export failed.");
         const issues = payload.detail && payload.detail.issues;
-        const fullMessage = Array.isArray(issues) && issues.length
-          ? `${detail} ${issues.join(" ")}`
-          : detail;
-        setStatus(fullMessage, true);
+        setStatus(() => {
+          const detail = getErrorMessage(payload, "status.exportFailed");
+          const translatedIssues =
+            Array.isArray(issues) && issues.length
+              ? issues.map(translateBackendMessage).join(" ")
+              : "";
+          return translatedIssues ? `${detail} ${translatedIssues}` : detail;
+        }, true);
         return;
       }
 
@@ -940,13 +1308,33 @@
       link.remove();
       URL.revokeObjectURL(url);
 
-      setStatus(`Downloaded ${filename}.`);
+      setStatus(() => t("status.downloaded", { filename }));
     } catch (err) {
-      setStatus("Could not reach the server. Check your connection and try again.", true);
+      setStatus(() => t("status.networkError"), true);
     } finally {
       setBusy(false);
     }
   });
+
+  function setLanguage(lang, persist) {
+    if (!SUPPORTED_LANGS.includes(lang)) return;
+    currentLang = lang;
+    if (persist) persistLang(lang);
+
+    applyStaticTranslations();
+    Object.entries(langButtons).forEach(([code, btn]) => {
+      btn.setAttribute("aria-pressed", String(code === lang));
+    });
+    applyStatusRender();
+    retranslateResult();
+  }
+
+  langButtons.fr.addEventListener("click", () => setLanguage("fr", true));
+  langButtons.en.addEventListener("click", () => setLanguage("en", true));
+
+  // Apply the stored/default language on load. Not persisted here --
+  // localStorage is only written on an explicit user selection above.
+  setLanguage(currentLang, false);
 </script>
 </body>
 </html>
