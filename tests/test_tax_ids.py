@@ -165,3 +165,51 @@ def test_extract_supplier_ice_from_emetteur_section():
     result = extract_invoice(text)
 
     assert result.data.supplier_tax_id == "001234567000089"
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "CLIENT RIAD TADLA SARL\nICE : 0019573020000489\n",
+        "EMETTEUR\nSahara Lumiere SARL\nICE : 0028145930000719\nCLIENT\nRiad Tadla\n",
+        "Siège social : Sahara Lumiere SARL\nI.C.E : 0028145930000719\n",
+    ],
+)
+def test_ice_with_more_than_15_digits_is_not_truncated_into_a_valid_ice(text):
+    result = extract_invoice(text)
+
+    assert result.data.customer_ICE is None
+    assert result.data.supplier_tax_id is None
+
+
+@pytest.mark.parametrize(
+    "text, expected",
+    [
+        (
+            "Fournisseur ICE : 002814593000071 - IF : 40123987",
+            {"supplier": [("ICE", "002814593000071")]},
+        ),
+        (
+            "Client ICE : 001957302000048   RC : 55123",
+            {"customer": [("ICE", "001957302000048")]},
+        ),
+        (
+            "Supplier IF: 40123987 | R.C. : 55123",
+            {"supplier": [("IF", "40123987")]},
+        ),
+        (
+            "Client ICE : 001 957 302 000 048",
+            {"customer": [("ICE", "001 957 302 000 048")]},
+        ),
+        (
+            "Client Tax ID: CIF-123456",
+            {"customer": [("TAX ID", "CIF-123456")]},
+        ),
+        (
+            "Client ICE : 00195730200004X",
+            {"customer": [("ICE", "00195730200004X")]},
+        ),
+    ],
+)
+def test_tax_id_value_stops_at_next_label(text, expected):
+    assert extract_tax_id_by_party(text) == expected
