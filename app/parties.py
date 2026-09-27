@@ -12,6 +12,7 @@ CUSTOMER_PATTERN = re.compile(
         |
         Factur[ée][ \t]*à
     )
+    (?:[ \t]+name(?!\w))?
     [ \t]*[:\-][ \t]*]*
     (?![ \t]*[:\-]?[ \t]*(?:ICE|IF|Identifiant[ \t]*Fiscal|Tax[ \t]*ID)\b)
     (?P<value>[^\n\s:\-][^\n]*)
@@ -36,6 +37,9 @@ SUPPLIER_PATTERN = re.compile(
     r"""
     ^[ \t]*
     (?:supplier|fournisseur|vendor)
+    (?:[ \t]+name(?!\w))?
+    # "Vendor ID: V-1", "Supplier No: 42" are identifier lines, not names.
+    (?![ \t]+(?:ID|No|N°|Number|Code)(?!\w))
     (?![ \t]*[:\-]?[ \t]*(?:ICE|IF|Identifiant[ \t]*Fiscal|Tax[ \t]*ID)\b)
     [ \t]*[:\-]?[ \t]*
     (?P<name>[^\n\s:\-][^\n]*)
