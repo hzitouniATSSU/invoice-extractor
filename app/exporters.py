@@ -57,8 +57,13 @@ def export_invoice_to_excel(invoice: InvoiceData, output_path: Path) -> Path:
     ws.append(row)
 
     for col_idx, key in enumerate(fieldnames, start=1):
+        cell = ws.cell(row=2, column=col_idx)
         if isinstance(data[key], date):
-            ws.cell(row=2, column=col_idx).number_format = "YYYY-MM-DD"
+            cell.number_format = "YYYY-MM-DD"
+        elif isinstance(data[key], str):
+            # openpyxl treats text starting with "=" as a formula; invoice
+            # text is untrusted, so always store it as a plain string.
+            cell.data_type = "s"
 
     wb.save(output_path)
     return output_path

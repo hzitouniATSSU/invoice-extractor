@@ -173,3 +173,24 @@ def test_xlsx_export_creates_missing_parent_directories(tmp_path):
 
     assert result == output_path
     assert output_path.exists()
+
+
+def test_xlsx_export_writes_formula_like_text_as_plain_text(tmp_path):
+    # Supplier/customer text comes from an uploaded PDF and must never
+    # become a live spreadsheet formula.
+    invoice = _valid_invoice(
+        supplier_name='=HYPERLINK("http://example.invalid","open")',
+        customer_name="=1+1",
+    )
+    output_path = tmp_path / "invoice.xlsx"
+
+    export_invoice_to_excel(invoice, output_path)
+
+    ws = openpyxl.load_workbook(output_path).active
+    headers = [cell.value for cell in ws[1]]
+    row = {header: cell for header, cell in zip(headers, ws[2])}
+    assert row["supplier_name"].value == '=HYPERLINK("http://example.invalid","open")'
+    assert row["supplier_name"].data_type == "s"
+    assert row["customer_name"].value == "=1+1"
+    assert row["customer_name"].data_type == "s"
+    assert row["total_amount"].data_type == "n"
