@@ -124,3 +124,100 @@ def test_extract_total_amount_when_value_is_on_next_line():
     text = "Total TTC\n11 040,00\n"
 
     assert extract_total_amount(text) == Decimal("11040.00")
+
+
+def test_labelled_grand_total_wins_over_earlier_bare_total():
+    text = "Total : 1 000,00 DH\nTVA 20% : 200,00 DH\nTotal TTC : 1 200,00 DH\n"
+
+    assert extract_total_amount(text) == Decimal("1200.00")
+
+
+def test_bare_total_is_still_used_without_a_labelled_grand_total():
+    text = "Subtotal: 1,000.00\nTax: 100.00\nTotal: 1,100.00\n"
+
+    assert extract_total_amount(text) == Decimal("1100.00")
+
+
+@pytest.mark.parametrize(
+    "text, expected",
+    [
+        ("TVA : 20 %\nTotal TVA : 200,00 DH", Decimal("200.00")),
+        ("TVA 20 %\nTotal TVA : 200,00 DH", Decimal("200.00")),
+        ("TVA : 20 %", None),
+        ("VAT: 20%", None),
+        ("TVA : 7,5 %", None),
+    ],
+)
+def test_tax_rate_is_not_read_as_tax_amount(text, expected):
+    assert extract_tax_amount(text) == expected
+
+
+@pytest.mark.parametrize(
+    "text, expected",
+    [
+        ("Total H.T : 1 000,00 DH", Decimal("1000.00")),
+        ("Total H.T. : 1 000,00 DH", Decimal("1000.00")),
+        ("Montant HT : 1 000,00 DH", Decimal("1000.00")),
+        ("Subtotal: $1,000.00", Decimal("1000.00")),
+        ("Total HT (DH) : 1 000,00", Decimal("1000.00")),
+        ("Grand Total: 1,100.00 USD", None),
+        ("Montant TVA : 200,00 DH", None),
+    ],
+)
+def test_extract_subtotal_label_variants(text, expected):
+    assert extract_subtotal_amount(text) == expected
+
+
+@pytest.mark.parametrize(
+    "text, expected",
+    [
+        ("T.V.A 20% : 200,00 DH", Decimal("200.00")),
+        ("T.V.A. (20%) : 200,00 DH", Decimal("200.00")),
+        ("Montant TVA : 200,00 DH", Decimal("200.00")),
+        ("TVA 20 %\nMontant TVA : 200,00 DH", Decimal("200.00")),
+        ("TVA à 20% : 200,00 DH", Decimal("200.00")),
+        ("Tax: $100.00", Decimal("100.00")),
+        ("T.V.A : 20 %", None),
+        ("Tax ID: 12345678", None),
+        ("Montant HT : 1 000,00 DH", None),
+    ],
+)
+def test_extract_tax_amount_label_variants(text, expected):
+    assert extract_tax_amount(text) == expected
+
+
+@pytest.mark.parametrize(
+    "text, expected",
+    [
+        ("Total T.T.C : 1 200,00 DH", Decimal("1200.00")),
+        ("Total T.T.C. : 1 200,00 DH", Decimal("1200.00")),
+        ("Total TTC (DH) : 960,00", Decimal("960.00")),
+        ("Total TTC : MAD 600,00", Decimal("600.00")),
+        ("Total TTC : € 600,00", Decimal("600.00")),
+        ("Total: $1,100.00", Decimal("1100.00")),
+        ("Grand Total: 1,100.00 USD", Decimal("1100.00")),
+        ("Total Due: 1,100.00 USD", Decimal("1100.00")),
+        ("Net à payer : 1 200,00 DH", Decimal("1200.00")),
+        ("Total à payer : 1 200,00 DH", Decimal("1200.00")),
+        ("Total H.T : 1 000,00 DH", None),
+        ("Montant HT : 1 000,00 DH", None),
+        ("Total T.V.A : 200,00 DH", None),
+        ("Total: USD", None),
+    ],
+)
+def test_extract_total_label_variants(text, expected):
+    assert extract_total_amount(text) == expected
+
+
+def test_grand_total_wins_over_earlier_bare_total():
+    text = "Total: 1,000.00\nVAT 10%: 100.00\nGrand Total: 1,100.00\n"
+
+    assert extract_total_amount(text) == Decimal("1100.00")
+
+
+def test_amount_payable_does_not_override_bare_total():
+    # "Net à payer" can be a balance after a deposit, so an explicit
+    # "Total" keeps priority over it.
+    text = "Total : 1 200,00 DH\nAcompte : 200,00 DH\nNet à payer : 1 000,00 DH\n"
+
+    assert extract_total_amount(text) == Decimal("1200.00")

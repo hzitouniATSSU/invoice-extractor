@@ -1,136 +1,137 @@
 import re
 from decimal import Decimal, InvalidOperation
 
-SUBTOTAL_PATTERN = re.compile(
-    r"""
-    ^[ \t]*
+CURRENCY = r"(?:(?:MAD|DHS?|EUR|USD|CAD|AUD)(?!\w)|[$€£¥])"
+
+# Optional currency in parentheses after a label: "Total TTC (DH) : 960,00".
+CURRENCY_NOTE = rf"(?:[ \t]*\([ \t]*{CURRENCY}[ \t]*\))?"
+
+# Optional currency written before the amount: "Total : $1,100.00".
+AMOUNT = rf"(?:{CURRENCY}[ \t]*)?(?P<value>\d[\d .,]*\d|\d)"
+
+# Label on its own line, amount at the start of the next line.
+NEXT_LINE_AMOUNT = rf"[ \t]*:?[ \t]*$\n[ \t]*{AMOUNT}"
+
+# Optional tax rate between a tax label and its amount: "TVA (20%)",
+# "TVA à 20%".
+TAX_RATE = r"(?:[ \t]*\(?[ \t]*(?:à[ \t]*)?\d+(?:[.,]\d+)?[ \t]*%[ \t]*\)?)?"
+
+# A value directly followed by "%" is a rate, not an amount.
+NOT_A_RATE = r"(?!\d|[.,]\d|[ \t]*%)"
+
+SUBTOTAL_LABELS = r"""
     (?:
         Sous[ \t\-]*total
         |
         subtotal
         |
-        Total[ \t]+HT
+        Total[ \t]+H\.?T\.?
+        |
+        Montant[ \t]+H\.?T\.?
     )
-    \b
+    (?!\w)
+"""
+
+TAX_LABELS = r"""
+    (?:
+        Total[ \t]+(?:T\.?V\.?A\.?|VAT)
+        |
+        Montant[ \t]+T\.?V\.?A\.?
+        |
+        T\.?V\.?A\.?
+        |
+        VAT
+        |
+        Tax[ \t]*Amount
+        |
+        Tax
+    )
+    (?!\w)
+"""
+
+SUBTOTAL_PATTERN = re.compile(
+    rf"""
+    ^[ \t]*
+    {SUBTOTAL_LABELS}
+    {CURRENCY_NOTE}
     [ \t]*[:\-]?[ \t]*
-    (?P<value>\d[\d .,]*\d|\d)
+    {AMOUNT}
     """,
     re.IGNORECASE | re.VERBOSE | re.MULTILINE,
 )
 
 SUBTOTAL_NEXT_LINE_PATTERN = re.compile(
-    r"""
+    rf"""
     ^[ \t]*
-    (?:
-        Sous[ \t\-]*total
-        |
-        subtotal
-        |
-        Total[ \t]+HT
-    )
-    [ \t]*:?[ \t]*
-    $
-    \n
-    [ \t]*
-    (?P<value>\d[\d .,]*\d|\d)
+    {SUBTOTAL_LABELS}
+    {CURRENCY_NOTE}
+    {NEXT_LINE_AMOUNT}
     """,
     re.IGNORECASE | re.VERBOSE | re.MULTILINE,
 )
+
 TAX_AMOUNT_PATTERN = re.compile(
-    r"""
-    (?:^|[ \t]{2,})
-    (?:
-        Total[ \t]+TVA
-        |
-        TVA
-        |
-        VAT
-        |
-        Tax[ \t]*Amount
-        |
-        Tax
-    )
-    \b
-
-    [ \t]*
-
-    (?:
-        \(?[ \t]*
-        \d+(?:[.,]\d+)?
-        [ \t]*%
-        [ \t]*\)?
-    )?
-
+    rf"""
+    (?:^|[ \t]{{2,}})
+    {TAX_LABELS}
+    {TAX_RATE}
+    {CURRENCY_NOTE}
     [ \t]*[:\-]?[ \t]*
-
-    (?P<value>\d[\d .,]*\d|\d)
+    {AMOUNT}
+    {NOT_A_RATE}
     """,
     re.IGNORECASE | re.VERBOSE | re.MULTILINE,
 )
 
 TAX_AMOUNT_NEXT_LINE_PATTERN = re.compile(
-    r"""
+    rf"""
     ^[ \t]*
-    (?:
-        Total[ \t]+TVA
-        |
-        TVA
-        |
-        VAT
-        |
-        Tax[ \t]*Amount
-        |
-        Tax
-    )
-    \b
-    [ \t]*
-    (?:
-        \(?[ \t]*
-        \d+(?:[.,]\d+)?
-        [ \t]*%
-        [ \t]*\)?
-    )?
-    [ \t]*:?[ \t]*
-    $
-    \n
-    [ \t]*
-    (?P<value>\d[\d .,]*\d|\d)
+    {TAX_LABELS}
+    {TAX_RATE}
+    {CURRENCY_NOTE}
+    {NEXT_LINE_AMOUNT}
+    {NOT_A_RATE}
     """,
     re.IGNORECASE | re.VERBOSE | re.MULTILINE,
 )
-TOTAL_PATTERN = re.compile(
-    r"""
-    (?:^|[ \t]{2,})
-    (?:
-        total[ \t]*ttc
-        |
-        montant[ \t]*ttc
-        |
-        total
+
+
+def _total_patterns(labels: str) -> tuple[re.Pattern[str], re.Pattern[str]]:
+    """Next-line and same-line patterns for one tier of total labels."""
+    next_line = re.compile(
+        rf"""
+        ^[ \t]*
+        (?:{labels})(?!\w)
+        {CURRENCY_NOTE}
+        {NEXT_LINE_AMOUNT}
+        """,
+        re.IGNORECASE | re.VERBOSE | re.MULTILINE,
     )
-    [ \t]*:?[ \t]*
-    (?P<value>\d[\d .,]*\d|\d)
-    """,
-    re.IGNORECASE | re.VERBOSE | re.MULTILINE,
-)
-TOTAL_NEXT_LINE_PATTERN = re.compile(
-    r"""
-    ^[ \t]*
-    (?:
-        Total[ \t]*TTC
-        |
-        Montant[ \t]*TTC
-        |
-        Total
+    same_line = re.compile(
+        rf"""
+        (?:^|[ \t]{{2,}})
+        (?:{labels})(?!\w)
+        {CURRENCY_NOTE}
+        [ \t]*:?[ \t]*
+        {AMOUNT}
+        """,
+        re.IGNORECASE | re.VERBOSE | re.MULTILINE,
     )
-    [ \t]*:?[ \t]*
-    $
-    \n
-    [ \t]*
-    (?P<value>\d[\d .,]*\d|\d)
-    """,
-    re.IGNORECASE | re.VERBOSE | re.MULTILINE,
-)
+    return next_line, same_line
+
+
+# Tiers are searched in order: an explicitly tax-inclusive or grand total wins
+# over a bare "Total", which may be a pre-tax or pre-discount figure. Amount
+# payable labels come last because they can be a balance after a deposit.
+TOTAL_LABEL_TIERS = [
+    r"total[ \t]*t\.?t\.?c\.? | montant[ \t]*t\.?t\.?c\.? | grand[ \t]+total",
+    r"total",
+    r"total[ \t]+due | (?:net|total)[ \t]+[àa][ \t]+payer",
+]
+
+TOTAL_PATTERNS = [
+    pattern for labels in TOTAL_LABEL_TIERS for pattern in _total_patterns(labels)
+]
 
 
 def _valid_grouping(number_part: str, sep: str) -> bool:
@@ -217,9 +218,8 @@ def extract_tax_amount(text: str) -> Decimal | None:
 
 
 def extract_total_amount(text: str) -> Decimal | None:
-    match = TOTAL_NEXT_LINE_PATTERN.search(text)
-    if not match:
-        match = TOTAL_PATTERN.search(text)
-    if not match:
-        return None
-    return normalize_amount(match.group("value"))
+    for pattern in TOTAL_PATTERNS:
+        match = pattern.search(text)
+        if match:
+            return normalize_amount(match.group("value"))
+    return None

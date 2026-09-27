@@ -42,6 +42,36 @@ def test_extract_customer_name(text, expected):
     assert extract_customer_name(text) == expected
 
 
+@pytest.mark.parametrize(
+    "text, expected",
+    [
+        ("Supplier Name: Palm Grove Ltd", "Palm Grove Ltd"),
+        ("Vendor ID: V-00912\nVendor: Palm Grove Ltd", "Palm Grove Ltd"),
+        ("Supplier No: 4410\nSupplier: Palm Grove Ltd", "Palm Grove Ltd"),
+        ("Fournisseur N° : 4410\nFournisseur : Atlas Tech", "Atlas Tech"),
+        ("Supplier: Code Factory SARL", "Code Factory SARL"),
+        ("Supplier Namibia Trading", "Namibia Trading"),
+        ("Fournisseur Nord Logistique", "Nord Logistique"),
+        ("Vendor ID: V-00912", None),
+    ],
+)
+def test_supplier_name_is_not_an_identifier_line(text, expected):
+    assert extract_supplier_name(text) == expected
+
+
+@pytest.mark.parametrize(
+    "text, expected",
+    [
+        ("Customer Name: Nomad Kitchens", "Nomad Kitchens"),
+        ("Client Name - Riad Tadla", "Riad Tadla"),
+        ("Customer ID: C-001", None),
+        ("Customer Name:", None),
+    ],
+)
+def test_customer_name_label_variants(text, expected):
+    assert extract_customer_name(text) == expected
+
+
 def test_extract_supplier_name_from_emetteur_section():
     text = (
         "EMETTEUR\n"

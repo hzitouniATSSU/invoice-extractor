@@ -19,8 +19,18 @@ from app.tax_ids import (
     select_supplier_tax_id_result,
 )
 
+# PDF text often carries non-breaking spaces (U+00A0, U+202F narrow, U+2007
+# figure) as French thousands separators or label padding. The extractors
+# only treat ASCII spaces/tabs as horizontal whitespace, so normalize first.
+_NON_BREAKING_SPACES = str.maketrans({"\u00a0": " ", "\u202f": " ", "\u2007": " "})
+
+
+def normalize_text(text: str) -> str:
+    return text.translate(_NON_BREAKING_SPACES)
+
 
 def extract_invoice(text: str) -> ExtractionResult:
+    text = normalize_text(text)
     currency_result = extract_currency(text)
 
     tax_ids_by_party = extract_tax_id_by_party(text)

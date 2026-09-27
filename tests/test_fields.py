@@ -25,6 +25,43 @@ def test_extract_invoice_number(text, expected):
     assert extract_invoice_number(text) == expected
 
 
+@pytest.mark.parametrize(
+    "text, expected",
+    [
+        ("Facture N° 2026.0045", "2026.0045"),
+        ("Invoice No: INV.2026.07", "INV.2026.07"),
+        ("Invoice No: FAC-001.", "FAC-001"),
+        ("Facture N° 145/2026. Date : 12/09/2026", "145/2026"),
+        ("Invoice #: INV-2026-07", "INV-2026-07"),
+        ("Invoice # 5521", "5521"),
+        ("Invoice N° 5521", "5521"),
+        ("N° de facture : FA-2026-31", "FA-2026-31"),
+        ("Numéro de facture : FA-2026-32", "FA-2026-32"),
+    ],
+)
+def test_extract_invoice_number_label_and_separator_variants(text, expected):
+    assert extract_invoice_number(text) == expected
+
+
+def test_explicit_invoice_number_label_wins_over_earlier_reference():
+    text = "Votre réf : BC-2026-778\nFacture N° FA-2026-0031\n"
+
+    assert extract_invoice_number(text) == "FA-2026-0031"
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Invoice notes: payable within 30 days",
+        "Numéro client : CL-0042",
+        "Invoice Number\nINV-77",
+        "Facture N° : ...",
+    ],
+)
+def test_extract_invoice_number_negative_cases(text):
+    assert extract_invoice_number(text) is None
+
+
 def test_extract_invoice_number_from_ref_label():
     text = "Facture\nRéf. : FA-2026-001\nDate : 12/09/2026\n"
 
@@ -44,6 +81,45 @@ def test_extract_invoice_number_from_ref_label():
 )
 def test_extract_invoice_date(text, expected):
     assert extract_invoice_date(text) == expected
+
+
+@pytest.mark.parametrize(
+    "text, expected",
+    [
+        (
+            "Due Date: 2026-10-30\nInvoice Date: 2026-09-30",
+            date(2026, 9, 30),
+        ),
+        (
+            "Order Date: 01/09/2026\nDate de facture : 05/09/2026",
+            date(2026, 9, 5),
+        ),
+        (
+            "Delivery Date: 01/09/2026\nDate : 05/09/2026",
+            date(2026, 9, 5),
+        ),
+        ("Issue Date: 05/09/2026", date(2026, 9, 5)),
+        ("Facture N° FA-001 Date : 05/09/2026", date(2026, 9, 5)),
+        ("Fournisseur : Atlas Tech     Date : 05/09/2026", date(2026, 9, 5)),
+    ],
+)
+def test_explicit_invoice_date_wins_over_other_dates(text, expected):
+    assert extract_invoice_date(text) == expected
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Due Date: 2026-10-30",
+        "Delivery Date: 30/10/2026",
+        "Order date: 30/10/2026",
+        "Last update: 30/10/2026",
+        "Date : 26-09-12",
+        "Invoice Date: 31/02/2026\nDelivery date: 01/03/2026\nDate: 01/03/2026",
+    ],
+)
+def test_non_invoice_or_malformed_dates_are_not_invoice_date(text):
+    assert extract_invoice_date(text) is None
 
 
 @pytest.mark.parametrize(

@@ -34,7 +34,7 @@ CUSTOMER_ICE_CONTEXT_PATTERN = re.compile(
     [ \t]*
     I[.]?C[.]?E[.]?
     [ \t]*:[ \t]*
-    (?P<value>\d{15})
+    (?P<value>\d{15})(?!\d)
     """,
     re.IGNORECASE | re.VERBOSE | re.MULTILINE,
 )
@@ -55,7 +55,7 @@ GENERIC_ICE_PATTERN = re.compile(
     r"""
     I[.]?C[.]?E[.]?
     [ \t]*:[ \t]*
-    (?P<value>\d{15})
+    (?P<value>\d{15})(?!\d)
     """,
     re.IGNORECASE | re.VERBOSE,
 )
@@ -74,10 +74,28 @@ SUPPLIER_FOOTER_ICE_PATTERN = re.compile(
     [^\n]*
     I[.]?C[.]?E[.]?
     [ \t]*:[ \t]*
-    (?P<value>\d{15})
+    (?P<value>\d{15})(?!\d)
     """,
     re.IGNORECASE | re.VERBOSE | re.MULTILINE,
 )
+
+
+# Company identifiers are often listed on one line ("ICE : ... - IF : ...").
+# A value ends where the next "LABEL :" begins.
+NEXT_IDENTIFIER_LABEL_PATTERN = re.compile(
+    r"""
+    [ \t]*(?:[-|,;/][ \t]*)?
+    (?<!\w)
+    (?:I\.?C\.?E|I\.?F|R\.?C|T\.?P|CNSS|Patente|T[ée]l|Fax)\.?
+    [ \t]*:
+    """,
+    re.IGNORECASE | re.VERBOSE,
+)
+
+
+def _strip_following_labels(value: str) -> str:
+    match = NEXT_IDENTIFIER_LABEL_PATTERN.search(value, 1)
+    return value[: match.start()].strip() if match else value
 
 
 def _canonical_label(raw_label: str) -> str:
@@ -91,7 +109,7 @@ def extract_tax_id_by_party(text: str) -> dict[str, list[tuple[str, str]]]:
         label_word = match.group("label_before") or match.group("label_after")
         party = PARTY_MAP[party_word.strip().lower()]
         label = _canonical_label(label_word)
-        value = match.group("value").strip()
+        value = _strip_following_labels(match.group("value").strip())
         if not value:
             continue
         result.setdefault(party, []).append((label, value))
